@@ -77,7 +77,8 @@ def main():
     for k in range(2):
         save(base[3 + k] * 0.18, out / f"under_{k + 1}.jpg")                     # dim but visible
         labels["exposure"][f"under_{k + 1}.jpg"] = {"exposure": "underexposed", "black_frame": False}
-        save(base[4 - k] * 0.012, out / f"black_{k + 1}.jpg")                    # practically black
+        save(np.zeros_like(base[0]) + k, out / f"black_{k + 1}.jpg")             # a black frame: nothing rendered
+        #   (a darkened scene still shows faint structure and reads as "very underexposed", not as a black frame)
         labels["exposure"][f"black_{k + 1}.jpg"] = {"exposure": "underexposed", "black_frame": True}
     for k in range(3):
         save(base[3 + k], out / f"clean_{k + 1}.jpg")

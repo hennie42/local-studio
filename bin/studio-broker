@@ -38,8 +38,10 @@ GPU_POLICY = cfg["STUDIO_GPU_POLICY"]
 GPU_MODELS = items("STUDIO_GPU_MODELS")        # local models on the render GPU: unloaded for GPU jobs (timeshare)
 SMALL_MODELS = items("STUDIO_SMALL_MODELS")    # models on a second GPU: unloaded for Godot jobs rendering there
 REGISTRY = pathlib.Path.home() / ".local/state/studio/projects"
-# -nocrashreports: a crashed editor exits at once instead of waiting on the crash-reporter UI (and never uploads)
-UE_GPU_ARGS = ["-vulkan", "-sm6", f"-graphicsadapter={cfg['STUDIO_UE_ADAPTER']}", "-nocrashreports"]
+# -nocrashreports: a crashed editor exits at once instead of waiting on the crash-reporter UI (and never uploads);
+# -unattended: no blocking message dialogs (e.g. "no compatible Vulkan device" after a driver update without reboot
+# hung a render for 40 min on a zenity dialog): the job fails at once and the log says why
+UE_GPU_ARGS = ["-vulkan", "-sm6", f"-graphicsadapter={cfg['STUDIO_UE_ADAPTER']}", "-nocrashreports", "-unattended"]
 # Godot: the default editor binary (godot-refresh keeps ~/.local/bin/godot pointing at the active release)
 GODOT = os.environ.get("GODOT_BIN", str(pathlib.Path.home() / ".local/bin/godot"))
 GODOT_GPU_ARGS = ["--gpu-index", cfg["STUDIO_GODOT_GPU"]]   # a VULKAN device index
@@ -80,6 +82,18 @@ def find_uproject(root, arg):
     if q.suffix != ".uproject" or not q.is_file():
         raise Reject(f"not a .uproject file: {arg}")
     return q
+
+
+def display_env():
+    """Display variables of the user's graphical session, read at job time: the broker may start at boot, before the
+    desktop exports WAYLAND_DISPLAY/DISPLAY to the systemd user manager (Unreal/Godot windows then fail: InitSDL)."""
+    try:
+        out = subprocess.run(["systemctl", "--user", "show-environment"], capture_output=True, text=True,
+                             timeout=5).stdout
+    except Exception:
+        return {}
+    keep = ("WAYLAND_DISPLAY", "DISPLAY", "XDG_SESSION_TYPE", "XDG_CURRENT_DESKTOP", "XAUTHORITY")
+    return {k: v for k, v in (l.split("=", 1) for l in out.splitlines() if "=" in l) if k in keep}
 
 
 def unload_gpu_llm(models=None):
@@ -410,7 +424,7 @@ def handle(root, req_path):
         lock = small_gpu_lock if gpu_heavy == "small" else gpu_lock if gpu_heavy else _nolock()
         to_unload = SMALL_MODELS if gpu_heavy == "small" else GPU_MODELS
         log_path = log_dir / f"{rid}-{action}.log"
-        env = {**os.environ, **env_extra, "CUDA_DEVICE_ORDER": "PCI_BUS_ID"}
+        env = {**os.environ, **display_env(), **env_extra, "CUDA_DEVICE_ORDER": "PCI_BUS_ID"}
         with lock:
             unloaded = unload_gpu_llm(to_unload) if gpu_heavy else []
             log(f"[{root.name}] {action} {' '.join(args)}" + (f" (unloaded {unloaded})" if unloaded else ""))

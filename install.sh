@@ -47,7 +47,13 @@ fi
 say "Detecting GPUs"
 gpus=()
 if command -v nvidia-smi >/dev/null; then
-  mapfile -t gpus < <(CUDA_DEVICE_ORDER=PCI_BUS_ID nvidia-smi --query-gpu=index,name,memory.total --format=csv,noheader,nounits)
+  smi=$(CUDA_DEVICE_ORDER=PCI_BUS_ID nvidia-smi --query-gpu=index,name,memory.total --format=csv,noheader,nounits 2>&1) || true
+  if grep -q "version mismatch" <<<"$smi"; then
+    echo "    NVIDIA driver/library version mismatch: the driver was updated but the old kernel module is still loaded."
+    echo "    Reboot, then run ./install.sh again (or pass --profile to skip detection)."
+    [[ -n $profile ]] || exit 1
+  fi
+  mapfile -t gpus < <(grep -E '^[0-9]+, ' <<<"$smi")
 fi
 big=-1 bigmem=0 small=-1 smallmem=0
 for g in "${gpus[@]}"; do
@@ -119,7 +125,8 @@ for f in "$STUDIO"/bin/* "$STUDIO"/models/bin/*; do [[ -f $f && -x $f ]] && run 
 for s in "$STUDIO"/skill/*/; do run ln -sfn "${s%/}" "$HOME/.claude/skills/$(basename "$s")"; done
 say "Routing and model catalog for profile $profile"
 if ((dry)); then echo "    [dry-run] write ~/.config/studio/routing.json and models.json"; else
-  python3 -c 'import json,sys; json.dump(json.load(open(sys.argv[1]))["routing"], open(sys.argv[2], "w"), indent=2)' \
+  rm -f "$HOME/.config/studio/routing.json"   # may be a symlink into a repo: never write through it
+  python3 -c 'import json,sys; open(sys.argv[2], "w").write(json.dumps(json.load(open(sys.argv[1]))["routing"], indent=2) + "\n")' \
     "$STUDIO/models/profiles/$profile.json" "$HOME/.config/studio/routing.json"
   python3 "$STUDIO/models/gen-config.py" effective "$profile" -o "$HOME/.config/studio/models.json" >/dev/null
 fi

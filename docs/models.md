@@ -12,7 +12,7 @@ productions. Other hardware: see [Choosing for your hardware](#choosing-for-your
 |---|---|---|
 | default worker (Unreal, Blender, coding, ffmpeg, audio) | **Qwen3.6-35B-A3B** (UD-Q4_K_XL, experts partly in RAM) | 19/20 runs passed in the capability suite and fastest: median 2-7 min per task, smallest contexts |
 | retry / long context / look-critical steps | **Bonsai 2 27B** (Qwen3.8-27B in ternary weights, PrismML fork) | also 19/20, a *different* model (a retry doesn't repeat the first one's blind spot), 188K context recall 3/3, best-looking renders by eye; ~3x slower |
-| Godot (GDScript) worker | **Gemma 4 26B-A4B** (UD-Q4_K_XL) - provisional | Godot suite: every task passed, 3x faster than the other passing model (see below) |
+| Godot (GDScript) worker | **Gemma 4 26B-A4B** (UD-Q4_K_XL) | Godot suite: 8/8 runs passed (2 per task), 3x faster than the other model that passed everything |
 | quick log triage on a small second GPU | Spark-X2.5-4B | 0.75 on log triage in ~20 s; never for multi-step tool work |
 | director | Claude (Claude Code) | plans, reviews, makes the visual calls; local workers draft and the director verifies |
 
@@ -44,11 +44,13 @@ stricter sandbox (workers can read nothing outside their project).
 platformer whose **exported Linux build** must finish the level on autopilot, and a 3D clip via Movie Maker. Same
 prompts and time limits for every model. Table: `evals/scorecard-godot-20261014.md`.
 
-| model | port | race logic | platformer + export | clip | passed | worker time |
+Two runs per task for the three capable models (scores of run 1 and run 2):
+
+| model | port | race logic | platformer + export | clip | passed | worker time per 4 tasks |
 |---|---|---|---|---|---|---|
-| **Gemma 4 26B-A4B** | 1.00 | 1.00 | 1.00 | 1.00 | **4/4** | **32 min** |
-| **Bonsai 2 27B** | 1.00 | 1.00 | 1.00 | 1.00 | **4/4** | 95 min |
-| Qwen3.6-35B-A3B | 1.00 | 0.96 | 0.35 (timeout) | 0.70 | 1/4 | 101 min |
+| **Gemma 4 26B-A4B** | 1.00 1.00 | 1.00 1.00 | 1.00 1.00 | 1.00 1.00 | **8/8** | **~31 min** |
+| **Bonsai 2 27B** | 1.00 1.00 | 1.00 1.00 | 1.00 1.00 | 1.00 1.00 | **8/8** | ~91 min |
+| Qwen3.6-35B-A3B | 1.00 1.00 | 0.96 1.00 | 0.35 0.70 | 0.70 1.00 | 4/8 | ~77 min |
 | Qwen3.8-27B Q3 | 1.00 | 0.00 | 0.25 | 0.15 | 1/4 | context-capped |
 | Mellum2.1 12B-A2.5B | 0.00 | 0.00 | 0.25 | 0.15 | 0/4 | gave up |
 
@@ -63,7 +65,9 @@ prompts and time limits for every model. Table: `evals/scorecard-godot-20261014.
 - **Qwen3.8-27B** only fits in 16 GB as Q3 with a 49K context; Claude Code's system prompt plus the task overflow it
   and auto-compaction fails. Its scores measure the context cap, not the model. (Its own chat template also rejects
   Claude Code's `developer` role: we give it Bonsai's template, from the same model family.)
-- **Second runs** (rep 2) are being added to confirm the ranking; until then the Godot routing is provisional.
+- **Qwen3.6** did better in its second run (3/4: race logic and clip passed) after two tooling fixes between the
+  runs (no stray MCP tools, no model reloads for Godot jobs), but missed the platformer both times: its autopilot
+  needed most of the time limit and the export never happened.
 
 ## What production taught us (beyond the suites)
 

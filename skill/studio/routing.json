@@ -48,17 +48,17 @@
     "worker": {
       "model": "gemma4-26b-a4b",
       "agent": "claude",
-      "why": "Godot suite 2026-10-14 (1 run per task): 4/4 passed in 32 min total (port 3->4, race logic 21/21, platformer + exports, Movie Maker clip); fastest and fewest turns/context. PROVISIONAL until a 2nd run."
+      "why": "Godot suite 2026-10-14/15, 2 runs per task: 8/8 passed, ~31 min per 4 tasks (fastest, fewest turns/context): port 3->4, race logic 21/21, platformer + exports, Movie Maker clip"
     },
     "retry": {
       "model": "bonsai2-27b",
       "agent": "claude",
-      "why": "also 4/4 (95 min, ~3x slower) and the best-looking clip by eye: use for retries and look-critical steps (lighting/composition)"
+      "why": "also 8/8 (~91 min per 4 tasks, ~3x slower) and the best-looking clips by eye: retries and look-critical steps"
     },
     "not_recommended": {
-      "qwen3.6-35b-a3b": "1/4: syntax fine, fails on behaviour (platformer autopilot) and runs out of time",
+      "qwen3.6-35b-a3b": "4/8 over 2 runs (rep 2: 3/4 after the tooling fixes): fails the platformer (autopilot timing + time limit)",
       "mellum2.1-12b": "0/4: loses the task inside Claude Code's long system prompt (12B too small for this harness)",
-      "qwen3.8-27b-q3": "untested: chat template error on the 'developer' role (fix + rerun pending)"
+      "qwen3.8-27b-q3": "1/4: limited by the 49K context that fits in 16 GB (template fixed)"
     },
     "scorecard": "evals/scorecard-godot-20261014.md"
   }

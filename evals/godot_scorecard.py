@@ -42,26 +42,32 @@ def main():
     out = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else run / "scorecard.md"
     rows = [json.loads(l) for l in (run / "results.jsonl").read_text().splitlines() if l.strip()]
     models = list(dict.fromkeys(r["model"] for r in rows))
-    by = {(r["model"], r["task"]): r for r in rows}
+    runs = {}
+    for r in rows:
+        runs.setdefault((r["model"], r["task"]), []).append(r)
+    by = {k: v[-1] for k, v in runs.items()}   # the latest run, for the tool-use table
     lines = [f"# Godot capability suite: {run.name}", "",
-             "One run per task, Claude Code harness, same prompts/time limits; Godot GPU jobs on a second GPU (worker LLM "
+             "Scores per run (rep 1, rep 2), mean minutes per run in brackets; Claude Code harness, same prompts/time limits; Godot GPU jobs on a second GPU (worker LLM "
              "never unloaded), headless game runs available. Score 0..1 (pass = 1.0).", "",
-             "| model | " + " | ".join(SHORT[t] for t in TASKS) + " | mean | passed | worker min |",
+             "| model | " + " | ".join(SHORT[t] for t in TASKS) + " | mean | passed | worker min per 4 tasks |",
              "|---|" + "---|" * (len(TASKS) + 3)]
     for m in models:
-        cells, scores, mins, passed = [], [], 0.0, 0
+        cells, scores, mins, passed, n = [], [], 0.0, 0, 0
         for t in TASKS:
-            r = by.get((m, t))
-            if not r:
+            rs = runs.get((m, t), [])
+            if not rs:
                 cells.append("-")
                 continue
-            scores.append(r["score"])
-            mins += (r.get("seconds") or 0) / 60
-            passed += bool(r.get("passed"))
-            cells.append(f"{'**' if r.get('passed') else ''}{r['score']:.2f}{'**' if r.get('passed') else ''}"
-                         f" ({(r.get('seconds') or 0) / 60:.0f}m)")
+            ok = sum(bool(r.get("passed")) for r in rs)
+            scores += [r["score"] for r in rs]
+            mins += sum((r.get("seconds") or 0) for r in rs) / 60
+            passed += ok
+            n += len(rs)
+            sc = " ".join(f"{r['score']:.2f}" for r in rs)
+            cells.append(f"{'**' if ok == len(rs) else ''}{sc}{'**' if ok == len(rs) else ''}"
+                         f" ({sum((r.get('seconds') or 0) for r in rs) / 60 / len(rs):.0f}m)")
         mean = sum(scores) / len(scores) if scores else 0
-        lines.append(f"| {m} | " + " | ".join(cells) + f" | {mean:.2f} | {passed}/{len(scores)} | {mins:.0f} |")
+        lines.append(f"| {m} | " + " | ".join(cells) + f" | {mean:.2f} | {passed}/{n} | {mins / max(n / 4, 1):.0f} |")
     lines += ["", "## How they worked (tool use per run)", "",
               "| model | task | turns | peak ctx | cookbook | api | demos | docs | checks | headless runs | GPU runs | renders | exports | notes |",
               "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]

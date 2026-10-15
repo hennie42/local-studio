@@ -22,8 +22,8 @@ for i, c in enumerate(colours):
     m = su.color_material(f"/Game/Demo/M_Glow_{i}", c, emissive=12.0)
     su.mesh_actor("Cube", (300 * (i - 2.5), 0, 60 + 40 * (i % 2)), scale=(0.8, 0.8, 1.2 + 0.4 * (i % 3)),
                   label=f"Glow_{i}", material=m.get_path_name(), movable=True)
-su.lighting(sun_pitch=-30, sun_intensity=1.5, sky_intensity=0.3)
-su.post_process(exposure_bias=1.0, bloom=1.2)
+su.lighting(sun_pitch=-30, sun_intensity=4.0, sky_intensity=0.6)
+su.post_process(exposure_bias=7.5, bloom=3.0)   # manual exposure: night/neon scenes need ~7 (1.0 renders black)
 cam = su.camera("DemoCam", (0, -1400, 400), look_at=(0, 0, 80), focal=30)
 seq = su.sequence("/Game/Demo/DemoSeq", seconds=5, fps=30)
 b = su.bind(seq, cam)
