@@ -1,7 +1,7 @@
 ---
 name: studio
 description: Make a short film (mp4) or a small game with Unreal Engine 5.8 or Godot 4.7, Blender, ffmpeg and procedural audio on this machine, with Claude as director/orchestrator and the local LLMs (claude-local / opencode workers) doing as much of the work as possible. Use when the user says /studio, or asks to create a cinematic, animation, movie clip, trailer, music video, or a game/vertical slice "locally", "with the local models", "in UE5" or "in Godot".
-argument-hint: <one-line brief, e.g. "20 s neon city flythrough at dusk" or "game: top-down orb collector">
+argument-hint: '<one-line brief, e.g. "20 s neon city flythrough at dusk" or "game: top-down orb collector">'
 ---
 
 # /studio: local-first film and game production
