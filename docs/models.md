@@ -30,6 +30,12 @@ Qwen3.6 generates faster (77.6 vs 67.8 tok/s) but takes 2.3x the turns, and its 
 musical key, a wrong light, a C++ test file with 0 asserts). Gemma's one miss was the same rounding rule Bonsai
 missed in the first suite. With Gemma also the Godot worker, one model now does all agent work.
 
+**Two parallel workers on one GPU?** Measured 2026-10-15 (Gemma 4, llama-server `-np 2 --kv-unified` vs `-np 1`,
+same 131K context shared): generation for two requests at once reaches 1.3x the total tokens/s (59 vs 45 tok/s, each
+request dropping to 44 tok/s), but prompt processing doesn't scale at all (~830 tok/s shared), so two 36K-token
+prompts take exactly as long either way (106 s). Agent turns are a mix of both, so a second slot would gain ~10-20%
+while making each worker slower and sharing one context budget. Not worth it: workers run one at a time.
+
 ## Capability suite (2026-10-07/08)
 
 14 tasks in 7 areas: coding (bug fix, feature, C++), Unreal (scene, sequence, C++ actor, render via the broker),

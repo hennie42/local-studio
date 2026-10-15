@@ -18,15 +18,13 @@ audio. Every step is planned, checked and committed, and the director reviews be
 
 ## How it works
 
-```
- you ── brief ──▶ director (Claude Code + /studio skill)
-                     │ plan: small steps, each with a mechanical check
-                     │ delegate ──▶ worker (Claude Code in a sandbox: local or online model)
-                     │                 │ edits the project, asks the broker for engine/GPU jobs:
-                     │                 └─▶ studio-broker ─▶ Godot · Unreal · Blender · ffmpeg (vetted actions only)
-                     │ review: run the check, read the diff, look at frames ─▶ pass / one sharper retry / take over
-                     └ ledger + git commit per step ─▶ deliver: mp4 / packaged game + a report of who did what
-```
+![Architecture: you, the director, sandboxed workers, the broker, engines, models and GPUs](docs/diagrams/architecture.drawio.svg)
+
+You give the director a brief, or a one-line idea that `/grill-me` turns into one by interviewing you. The director
+plans small steps, each with a mechanical check, and hands each step to a sandboxed worker. The worker edits the
+project and asks the broker for engine and GPU jobs. The director re-runs the checks, reads the diff, looks at the
+frames, and only then commits. The whole loop, the per-step handover and how models get picked:
+[workflow](docs/workflow.md), [architecture](docs/architecture.md), [evals](docs/evals.md).
 
 The director is the `/studio` skill ([skill/studio/SKILL.md](skill/studio/SKILL.md)). Workers read a guide per
 engine (`template/AGENTS.md`, `template/AGENTS-godot.md`) and use tested helpers instead of hand-written geometry.
@@ -45,7 +43,8 @@ git clone https://github.com/hennie42/local-studio && cd local-studio
 studio-config                   # where everything lives
 ```
 
-Then, in Claude Code:
+Then, in Claude Code (optionally start with `/grill-me <idea>` to turn an idea into a brief, see
+[workflow](docs/workflow.md)):
 
 ```
 /studio game: a small 2D platformer in Godot, keyboard and gamepad, web export
@@ -72,7 +71,7 @@ yourself, then set `STUDIO_UE_ROOT` in `~/.config/studio/studio.env`.
 | `godot/cookbook/` | verified Godot recipes (each compiles and passes a self-test on every new Godot release) |
 | `models/` | local models: catalog, hardware profiles, config generator, llama.cpp build, downloads, `claude-local` |
 | `evals/` | capability suites, graders, scorecards, the multi-model comparison clip |
-| `docs/` | [models](docs/models.md), [architecture](docs/architecture.md), [Godot](docs/godot.md), [Unreal](docs/unreal.md), [local models](docs/local-models.md), [evals](docs/evals.md), [security](docs/security.md) |
+| `docs/` | [workflow](docs/workflow.md), [models](docs/models.md), [architecture](docs/architecture.md), [Godot](docs/godot.md), [Unreal](docs/unreal.md), [local models](docs/local-models.md), [evals](docs/evals.md), [security](docs/security.md) |
 
 ## Limits (honest)
 

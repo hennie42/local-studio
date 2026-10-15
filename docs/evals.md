@@ -2,6 +2,16 @@
 
 Model choices in this repo come from measurements, and you can rerun them for your own models and hardware.
 
+## Evaluating new models
+
+![From a new release to a routing decision](diagrams/model-evaluation.drawio.svg)
+
+New models are picked from public releases, but they win or lose on this suite. A candidate that fits a GPU slot is
+added to `models/catalog.json` and smoke-tested (loads, calls tools, sees images). Then it gets a quick screen
+against the model currently in that slot, and only if it comes close, the full suite with 2 runs per task and the
+current model re-run on the same tooling, since tooling changes move scores too. The scorecard ends with a
+recommendation; routing changes only when you approve it.
+
 ## Capability suite
 `evals/harness.py` runs agent tasks (a worker in a sandboxed workspace, graded afterwards by hidden checks) and
 direct tasks (a single API call: vision, long-context recall, log triage).

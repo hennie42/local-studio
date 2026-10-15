@@ -1,5 +1,7 @@
 # Architecture
 
+![Components: director, sandboxed worker, broker, engines, llama-swap and GPUs](diagrams/architecture.drawio.svg)
+
 ## Roles
 - **Director**: Claude Code with the `/studio` skill (`skill/studio/SKILL.md`). Turns a brief into `PLAN.md` (small
   steps, each with a mechanical check), delegates steps, reviews (runs the check, reads the diff, looks at rendered
@@ -13,6 +15,8 @@
   `studio <action> ...` (a JSON request file in the project's `.studio/spool/`). The broker runs only the actions it
   knows (Unreal Python/render/build/package/play, Blender, encode, Godot check/script/import/play/movie/export, run a
   packaged build), only on paths inside a registered project, logs to `.studio/logs/` and returns a filtered summary.
+
+![Which task type goes to which model and GPU](diagrams/routing.drawio.svg)
 
 ## GPUs
 One GPU is the **worker GPU** (the local LLM). Rendering needs GPU memory too, so with `STUDIO_GPU_POLICY=timeshare`
@@ -35,3 +39,9 @@ search instead of trusting their (often outdated) memory.
 Everything machine-specific is in `~/.config/studio/studio.env` (`studio-config` prints it): project and model
 folders, engine paths, GPU indices (CUDA and Vulkan numbering can differ), which models live on which GPU.
 `install.sh` writes it from the detected hardware; edit it freely.
+
+## Diagrams
+The diagrams in `docs/diagrams/` are `.drawio.svg` files: GitHub shows them as images, and draw.io (desktop app,
+app.diagrams.net or the VS Code extension) opens them for editing with the diagram embedded. Colours: yellow = you,
+blue = Claude, green = local models and workers, purple = broker and engines, red = checks, orange = GPUs, grey =
+files; dashed = planned. The step-by-step flow is in [workflow](workflow.md).

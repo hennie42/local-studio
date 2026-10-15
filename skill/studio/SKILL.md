@@ -53,7 +53,9 @@ cat ~/.config/studio/routing.json        # which local model/agent does what (fr
   but you make the visual call.
 
 ## 2. Brief to plan
-Ask at most 2-3 questions if the brief is ambiguous (length, mood/style, platform for games). **Pick the engine**
+If the project has a `BRIEF.md` from `/grill-me` (docs/workflow.md), treat its decisions as settled and plan from it.
+Otherwise ask at most 2-3 questions if the brief is ambiguous (length, mood/style, platform for games); for a big,
+vague idea (a whole game), suggest the user run `/grill-me <idea>` first. **Pick the engine**
 (say which and why in the plan; the user may name one):
 - **Unreal 5.8**: photoreal/cinematic 3D (ray tracing, volumetrics, Movie Render Queue), heavy scenes, C++ games
   where the look matters most. Slow iteration (shader compiles, C++ builds), Linux packages only.
