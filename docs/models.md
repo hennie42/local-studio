@@ -55,6 +55,18 @@ instead of 8/8, Blender/media equal, coding slightly worse, and slower with larg
 Claude Code (`claude-local`). One OpenCode run was excluded because the worker read its own grader: that led to the
 stricter sandbox (workers can read nothing outside their project).
 
+**Small-GPU challengers (2026-10-15)**, 2 runs each on the 2060, same tooling (`evals/scorecard-small-20261015.md`):
+
+| model | UE log triage | vision exposure / defects | recall (32K) |
+|---|---|---|---|
+| Gemma 4 E4B | **0.69** (~90 s) | 0.78 / 0.81 | 0.90 |
+| Spark-X2.5-4B | 0.56 (~20 s) | no vision | 1.00 |
+| Qwen3.5-4B | 0.31 | **0.95 / 1.00** (~2-3 min) | 1.00 |
+| Ministral 3 8B | 0.38 | 0.65 / 0.62 | context too small |
+
+No small model is good enough to change the routing: triage stays with Bonsai (0.88) and vision with Gemma 4 26B
+(1.00). Gemma 4 E4B is the best small model for triage, Qwen3.5-4B for vision; Ministral 3 8B was dropped.
+
 **Small models** (4-9B on the 6 GB card) can fix a single file or triage a log, but fail multi-step tool work
 (Blender 0/3, ffmpeg 0/3): they never get delegated agent tasks.
 

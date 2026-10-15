@@ -67,6 +67,25 @@
       "args": "-c 131072 -ctk q8_0 -ctv q8_0 --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0",
       "tested": "Godot suite 0/4: loses the task inside Claude Code's long system prompt; not a worker (fast: 245 tok/s)"
     },
+    "gemma4-e4b": {
+      "name": "Gemma 4 E4B UD-Q4_K_XL + vision (small GPU)",
+      "slot": "small", "server": "stock", "vram_gb": 5, "ctx": 32768, "vision": true,
+      "files": [["unsloth/gemma-4-E4B-it-GGUF", "gemma-4-E4B-it-UD-Q4_K_XL.gguf"],
+                ["unsloth/gemma-4-E4B-it-GGUF", "mmproj-F16.gguf", "gemma-4-E4B-mmproj-F16.gguf"]],
+      "model": "gemma-4-E4B-it-UD-Q4_K_XL.gguf", "mmproj": "gemma-4-E4B-mmproj-F16.gguf", "mmproj_offload": false,
+      "args": "-c 32768 -ctk q8_0 -ctv q8_0 -ot per_layer_token_embd=CPU --temp 1.0 --top-p 0.95 --top-k 64 --min-p 0.0",
+      "notes": ["Per-layer embeddings (a lookup table, ~1/3 of the file) stay in system RAM (-ot), so the 5 GB file fits on 6 GB."],
+      "tested": "2026-10-15, 2 runs: triage 0.69 (best small model; Spark 0.56, Bonsai 0.88) in ~90 s, vision 0.78/0.81 (misses overexposure), recall 3/3 at 28K"
+    },
+    "ministral3-8b": {
+      "name": "Ministral 3 8B Instruct 2512 IQ4_XS + vision (small GPU, tight)",
+      "slot": "small", "server": "stock", "vram_gb": 6, "ctx": 16384, "vision": true,
+      "files": [["unsloth/Ministral-3-8B-Instruct-2512-GGUF", "Ministral-3-8B-Instruct-2512-IQ4_XS.gguf"],
+                ["unsloth/Ministral-3-8B-Instruct-2512-GGUF", "mmproj-F16.gguf", "Ministral-3-8B-mmproj-F16.gguf"]],
+      "model": "Ministral-3-8B-Instruct-2512-IQ4_XS.gguf", "mmproj": "Ministral-3-8B-mmproj-F16.gguf", "mmproj_offload": false,
+      "args": "-c 16384 -ctk q8_0 -ctv q8_0 --temp 0.15",
+      "tested": "2026-10-15, 2 runs: triage 0.38, vision 0.65/0.62, 16K context too small for the recall test: not recommended"
+    },
     "spark-4b": {
       "name": "Spark-X2.5-4B Q8_0 (small/fast slot)",
       "slot": "small", "server": "stock", "vram_gb": 5, "ctx": 32768, "vision": false,
