@@ -3,8 +3,8 @@
   "tested": false,
   "big": [
     "gemma4-26b-a4b",
-    "qwen3.6-35b-a3b",
-    "bonsai2-27b"
+    "bonsai2-27b",
+    "qwen3.6-35b-a3b"
   ],
   "small": [],
   "preload": [
@@ -14,7 +14,7 @@
   "routing": {
     "_source": "UNTESTED estimate: same models and settings as the measured reference machine, minus the small second GPU (Godot jobs then timeshare the worker GPU: set STUDIO_GODOT_ON_SMALL_GPU=0)",
     "worker": {
-      "model": "qwen3.6-35b-a3b",
+      "model": "gemma4-26b-a4b",
       "agent": "claude"
     },
     "retry": {

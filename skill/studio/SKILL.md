@@ -36,12 +36,12 @@ ensure-llama-swap && systemctl --user start studio-broker
 cat ~/.config/studio/routing.json        # which local model/agent does what (from the capability tests)
 ```
 `studio-worker` reads its default model/agent from routing.json. Measured profile (scorecard:
-`evals/scorecard-20261008.md`, measured on the reference machine described in docs/models.md):
-- **Default worker: Qwen3.6-35B-A3B in Claude Code** (19/20 agent runs passed across coding, UE Python/C++/
-  render, Blender, ffmpeg, audio; median 2-7 min per step; context peaks <= 87K of 131K).
-- **Retry with the other model when the approach was wrong:** Bonsai 2 27B (also 19/20, ~3x slower; a different
-  model doesn't repeat the first one's blind spot).
-- **Huge inputs (> ~100K tokens, e.g. full UE logs): Bonsai** (3/3 recall at 188K).
+`evals/scorecard-20261015.md`, measured on the reference machine described in docs/models.md):
+- **Default worker, Godot included: Gemma 4 26B-A4B in Claude Code** (19/20 agent runs passed across coding, UE
+  Python/C++/render, Blender, ffmpeg, audio, and 8/8 in the Godot suite; 2-5 min per step; context peaks <= 45K of 131K).
+- **Retry with the other model when the approach was wrong:** Bonsai 2 27B (19/20, 8/8 Godot, ~3x slower; a
+  different model doesn't repeat the first one's blind spot).
+- **Huge inputs (> ~100K tokens) and UE log triage: Bonsai** (3/3 recall at 188K; triage 0.88, Gemma only 0.50).
 - **Small models (second GPU): only quick log triage (Spark, ~20 s) and one-file fixes**: never multi-step tool work.
 - **Harness: Claude Code workers only** (OpenCode was clearly weaker with the same model).
 - **Known worker slips to check in review:** spec details like "base at z = 0" (Blender), musical tempo (graders
@@ -49,7 +49,7 @@ cat ~/.config/studio/routing.json        # which local model/agent does what (fr
   units (meshes import in cm; a factor 100 error gives 17 km towers), bounds extent used as a position, hand-made
   rotations, unreal.Color expecting 0-255. Workers' self-checks don't catch these (they test their own beliefs):
   measure yourself (actor bounds, mesh bounding boxes) and render a frame. In prompts, prescribe the helpers
-  (su.wall_panel, su.face_point, su.camera(look_at=...)) instead of letting workers derive geometry. Vision pre-screen by Qwen3.6 is good (0.97)
+  (su.wall_panel, su.face_point, su.camera(look_at=...)) instead of letting workers derive geometry. Vision pre-screen by Gemma 4 is good (1.00 on synthetic frames)
   but you make the visual call.
 
 ## 2. Brief to plan
@@ -122,7 +122,7 @@ files the worker is touching.
 - **Unreal**: C++ in `Source/<Name>/`; build with `studio ue-build`; levels via Python scripts; input via Enhanced
   Input set up in C++ (no Blueprint graphs: workers can't edit them). Package with `studio ue-package`, verify with
   `studio run-packaged 200 -autopilot` (markers via GameEvent.h: Shipping strips UE_LOG).
-- **Godot**: delegate with `--model` from routing.json `godot.worker` (Gemma 4, provisional; retry/look-critical:
+- **Godot**: delegate with `--model` from routing.json `godot.worker` (Gemma 4, same as the default worker; retry/look-critical:
   `godot.retry`, Bonsai). GDScript only; the worker must run `studio godot-check` after every edit (local models drift into
   Godot 3 syntax; `godot-api/` holds the exact 4.7 API to grep). Review: `godot-check` clean, `godot-play` log has
   the expected markers and no `SCRIPT ERROR`, screenshots look right. Exports are chosen at export time

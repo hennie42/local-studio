@@ -10,11 +10,25 @@ productions. Other hardware: see [Choosing for your hardware](#choosing-for-your
 
 | role | model | why |
 |---|---|---|
-| default worker (Unreal, Blender, coding, ffmpeg, audio) | **Qwen3.6-35B-A3B** (UD-Q4_K_XL, experts partly in RAM) | 19/20 runs passed in the capability suite and fastest: median 2-7 min per task, smallest contexts |
-| retry / long context / look-critical steps | **Bonsai 2 27B** (Qwen3.8-27B in ternary weights, PrismML fork) | also 19/20, a *different* model (a retry doesn't repeat the first one's blind spot), 188K context recall 3/3, best-looking renders by eye; ~3x slower |
-| Godot (GDScript) worker | **Gemma 4 26B-A4B** (UD-Q4_K_XL) | Godot suite: 8/8 runs passed (2 per task), 3x faster than the other model that passed everything |
+| default worker: Unreal, Blender, coding, ffmpeg, audio **and Godot** | **Gemma 4 26B-A4B** (UD-Q4_K_XL, experts partly in RAM) | 19/20 agent runs in the capability suite (Qwen3.6 16/20 on the same tooling), 8/8 in the Godot suite; fewest turns, smallest contexts; vision pre-screen 1.00 |
+| retry / long context / log triage / look-critical steps | **Bonsai 2 27B** (Qwen3.8-27B in ternary weights, PrismML fork) | also 19/20 and 8/8 Godot, a *different* model family (a retry doesn't repeat the first one's blind spot), 188K context recall 3/3, log triage 0.88, best-looking renders by eye; ~3x slower |
+| fallback worker | Qwen3.6-35B-A3B (UD-Q4_K_XL) | 16/20 on the same tooling, 4/8 Godot; fastest tokens but 2.3x the turns |
 | quick log triage on a small second GPU | Spark-X2.5-4B | 0.75 on log triage in ~20 s; never for multi-step tool work |
 | director | Claude (Claude Code) | plans, reviews, makes the visual calls; local workers draft and the director verifies |
+
+## Capability suite, rerun: Gemma 4 vs Qwen3.6 (2026-10-15)
+
+The same suite on today's tooling (no stray MCP tools in workers, synthetic vision frames); table:
+`evals/scorecard-20261015.md`.
+
+| model | agent tasks passed | mean | worker time | turns | peak ctx | vision | log triage |
+|---|---|---|---|---|---|---|---|
+| **Gemma 4 26B-A4B** | **19/20** | **0.995** | **57 min** | **172** | **45K** | **1.00 / 1.00** | 0.50 |
+| Qwen3.6-35B-A3B | 16/20 | 0.974 | 80 min | 401 | 81K | 0.93 / 1.00 | 0.75 |
+
+Qwen3.6 generates faster (77.6 vs 67.8 tok/s) but takes 2.3x the turns, and its misses were spec slips (wrong
+musical key, a wrong light, a C++ test file with 0 asserts). Gemma's one miss was the same rounding rule Bonsai
+missed in the first suite. With Gemma also the Godot worker, one model now does all agent work.
 
 ## Capability suite (2026-10-07/08)
 
@@ -93,8 +107,8 @@ measured. The others are estimates from the same models and the VRAM each needs:
 | `online` | none needed | Claude Sonnet | Claude Opus | Claude Sonnet | API costs; no local setup; the studio works the same |
 | `8gb` | 8 GB | Bonsai 2 (49K ctx) | Qwen3.6 (mostly in RAM, slow) | Bonsai 2 | small contexts: consider `online` or mixed for big steps |
 | `12gb` | 12 GB | Bonsai 2 (131K) | Gemma 4 (experts in RAM) | Gemma 4 | |
-| `16gb` | 16 GB | Qwen3.6 | Bonsai 2 | Gemma 4 | the reference models without the small GPU |
-| `16gb+6gb-reference` | 16 GB + 6 GB | Qwen3.6 | Bonsai 2 | Gemma 4 | **measured** |
+| `16gb` | 16 GB | Gemma 4 | Bonsai 2 | Gemma 4 | the reference models without the small GPU |
+| `16gb+6gb-reference` | 16 GB + 6 GB | Gemma 4 | Bonsai 2 | Gemma 4 | **measured** |
 | `24gb` | 24 GB | Gemma 4 (all in VRAM) | Bonsai 2 | Gemma 4 | |
 
 RAM matters for MoE models whose experts live in system RAM (Qwen3.6, Gemma 4 on smaller cards): faster RAM means
