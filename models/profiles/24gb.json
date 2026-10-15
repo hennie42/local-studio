@@ -1,0 +1,45 @@
+{
+  "description": "One 24 GB GPU (e.g. RTX 3090/4090), 64 GB RAM. UNTESTED estimate.",
+  "tested": false,
+  "big": [
+    "gemma4-26b-a4b",
+    "qwen3.6-35b-a3b",
+    "bonsai2-27b"
+  ],
+  "small": [],
+  "preload": [
+    "gemma4-26b-a4b"
+  ],
+  "overrides": {
+    "gemma4-26b-a4b": {
+      "n_cpu_moe": 0
+    },
+    "qwen3.6-35b-a3b": {
+      "n_cpu_moe": 6
+    }
+  },
+  "routing": {
+    "_source": "UNTESTED estimate: Gemma 4 fits entirely in 24 GB (faster than our expert-offloaded runs); routing follows the 16 GB measurements",
+    "worker": {
+      "model": "gemma4-26b-a4b",
+      "agent": "claude"
+    },
+    "retry": {
+      "model": "bonsai2-27b",
+      "agent": "claude"
+    },
+    "godot": {
+      "worker": {
+        "model": "gemma4-26b-a4b",
+        "agent": "claude"
+      },
+      "retry": {
+        "model": "bonsai2-27b",
+        "agent": "claude"
+      }
+    },
+    "gpu_policy": {
+      "mode": "timeshare"
+    }
+  }
+}

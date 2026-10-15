@@ -1,0 +1,38 @@
+{
+  "description": "One 16 GB GPU (e.g. RTX 4070 Ti Super/5070 Ti/4080), 64 GB RAM. Our worker models without the second GPU.",
+  "tested": false,
+  "big": [
+    "gemma4-26b-a4b",
+    "qwen3.6-35b-a3b",
+    "bonsai2-27b"
+  ],
+  "small": [],
+  "preload": [
+    "gemma4-26b-a4b"
+  ],
+  "overrides": {},
+  "routing": {
+    "_source": "UNTESTED estimate: same models and settings as the measured reference machine, minus the small second GPU (Godot jobs then timeshare the worker GPU: set STUDIO_GODOT_ON_SMALL_GPU=0)",
+    "worker": {
+      "model": "qwen3.6-35b-a3b",
+      "agent": "claude"
+    },
+    "retry": {
+      "model": "bonsai2-27b",
+      "agent": "claude"
+    },
+    "godot": {
+      "worker": {
+        "model": "gemma4-26b-a4b",
+        "agent": "claude"
+      },
+      "retry": {
+        "model": "bonsai2-27b",
+        "agent": "claude"
+      }
+    },
+    "gpu_policy": {
+      "mode": "timeshare"
+    }
+  }
+}

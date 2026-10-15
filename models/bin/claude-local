@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Claude Code against the local llama-swap endpoint (plain `claude` stays on Anthropic's API).
+# Model: $LOCAL_LLM_MODEL, else STUDIO_LOCAL_MODEL from ~/.config/studio/studio.env, else the first model of the
+# configured profile. The context size comes from models/catalog.json so auto-compact kicks in before the server
+# overflows.
+here=$(dirname "$(readlink -f "$0")")
+eval "$(python3 "$here/../../lib/studio_config.py" --shell)"
+model=${LOCAL_LLM_MODEL:-${STUDIO_LOCAL_MODEL:-}}
+if [[ -z $model ]]; then
+  echo "claude-local: no local model configured (set STUDIO_LOCAL_MODEL in ~/.config/studio/studio.env)" >&2
+  exit 1
+fi
+cat=$HOME/.config/studio/models.json; [[ -f $cat ]] || cat=$here/../catalog.json   # installed profile first
+ctx=${LOCAL_LLM_CTX:-$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["models"].get(sys.argv[2], {}).get("ctx", 32768))' "$cat" "$model")}
+export ANTHROPIC_BASE_URL="${LOCAL_LLM_URL:-$STUDIO_LLAMA_URL}"
+export ANTHROPIC_AUTH_TOKEN=local
+export ANTHROPIC_MODEL="$model"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="$model"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="$model"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="${LOCAL_LLM_SMALL_MODEL:-${STUDIO_LOCAL_SMALL_MODEL:-$model}}"
+export CLAUDE_CODE_SUBAGENT_MODEL="$model"
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+export CLAUDE_CODE_MAX_CONTEXT_TOKENS="$ctx"
+unset ANTHROPIC_API_KEY
+"$here/ensure-llama-swap" || exit 1
+exec claude "$@"

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# studio-config: show the studio's machine configuration (~/.config/studio/studio.env + defaults).
+#   studio-config            human-readable
+#   studio-config --shell    `export KEY=value` lines (eval "$(studio-config --shell)")
+exec python3 "$(dirname "$(readlink -f "$0")")/../lib/studio_config.py" "$@"

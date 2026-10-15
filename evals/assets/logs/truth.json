@@ -1,0 +1,44 @@
+{
+ "case_camera.log": {
+  "cause_any": [
+   "UpdateViewTarget",
+   "PlayerCameraManager"
+  ],
+  "fix_any": [
+   "camera",
+   "sequence",
+   "view target"
+  ]
+ },
+ "case_skincache.log": {
+  "cause_any": [
+   "skin cache",
+   "SkinCache"
+  ],
+  "fix_any": [
+   "r.SkinCache.CompileShaders"
+  ]
+ },
+ "case_property.log": {
+  "cause_any": [
+   "volumetric_fog"
+  ],
+  "fix_any": [
+   "enable_volumetric_fog"
+  ]
+ },
+ "case_quit.log": {
+  "cause_any": [
+   "QUIT_EDITOR",
+   "quit",
+   "PIE Ended"
+  ],
+  "fix_any": [
+   "ExecutePythonScript",
+   "startup",
+   "init_unreal",
+   "keep the editor",
+   "wait"
+  ]
+ }
+}

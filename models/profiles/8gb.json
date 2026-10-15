@@ -1,0 +1,47 @@
+{
+  "description": "One 8 GB GPU, 32+ GB RAM. UNTESTED estimate: workable for small tasks, slow for the big ones.",
+  "tested": false,
+  "big": [
+    "bonsai2-27b",
+    "qwen3.6-35b-a3b"
+  ],
+  "small": [],
+  "preload": [
+    "bonsai2-27b"
+  ],
+  "overrides": {
+    "bonsai2-27b": {
+      "args": "-c 49152 -ctk q8_0 -ctv q8_0 --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.05",
+      "ctx": 49152
+    },
+    "qwen3.6-35b-a3b": {
+      "n_cpu_moe": 38,
+      "args": "-c 65536 -ctk q8_0 -ctv q8_0 --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0",
+      "ctx": 65536
+    }
+  },
+  "routing": {
+    "_source": "UNTESTED estimate: Bonsai's 6 GB weights fit with a short context; Qwen3.6 mostly in RAM. Consider the online or mixed mode",
+    "worker": {
+      "model": "bonsai2-27b",
+      "agent": "claude"
+    },
+    "retry": {
+      "model": "qwen3.6-35b-a3b",
+      "agent": "claude"
+    },
+    "godot": {
+      "worker": {
+        "model": "bonsai2-27b",
+        "agent": "claude"
+      },
+      "retry": {
+        "model": "qwen3.6-35b-a3b",
+        "agent": "claude"
+      }
+    },
+    "gpu_policy": {
+      "mode": "timeshare"
+    }
+  }
+}

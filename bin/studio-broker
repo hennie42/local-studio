@@ -1,0 +1,480 @@
+#!/usr/bin/env python3
+"""studio-broker: runs vetted GPU/engine jobs on behalf of sandboxed workers.
+
+Workers (claude-local / opencode, sandboxed to their project directory) cannot run
+Unreal, Blender or NVENC themselves. They call `studio <action> ...`, which writes a
+request into <project>/.studio/spool/req/. This broker, running outside the sandbox,
+validates the request (known action, every path inside the project), runs it, and
+writes <project>/.studio/spool/res/<id>.json with the exit code, a log path and a
+filtered log tail.
+
+GPU policy (STUDIO_GPU_POLICY):
+  timeshare   - before a GPU-heavy job, unload the LLM on the 5070 Ti via llama-swap;
+                the worker's next request reloads it (worker is idle while it waits)
+  coresident  - leave the LLM loaded (it must leave enough VRAM free)
+Projects are registered in ~/.local/state/studio/projects (one absolute path per line).
+"""
+import json
+import os
+import pathlib
+import re
+import shlex
+import subprocess
+import sys
+import threading
+import time
+import urllib.request
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+from studio_config import cfg, items, path  # noqa: E402  (machine config: ~/.config/studio/studio.env)
+
+UE_ROOT = path("STUDIO_UE_ROOT") if cfg["STUDIO_UE_ROOT"] else None
+UE_EDITOR = UE_ROOT / "Engine/Binaries/Linux/UnrealEditor" if UE_ROOT else None
+UE_CMD = UE_ROOT / "Engine/Binaries/Linux/UnrealEditor-Cmd" if UE_ROOT else None
+UE_BUILD = UE_ROOT / "Engine/Build/BatchFiles/Linux/Build.sh" if UE_ROOT else None
+UE_UAT = UE_ROOT / "Engine/Build/BatchFiles/RunUAT.sh" if UE_ROOT else None
+LLAMA_URL = cfg["STUDIO_LLAMA_URL"]
+GPU_POLICY = cfg["STUDIO_GPU_POLICY"]
+GPU_MODELS = items("STUDIO_GPU_MODELS")        # local models on the render GPU: unloaded for GPU jobs (timeshare)
+SMALL_MODELS = items("STUDIO_SMALL_MODELS")    # models on a second GPU: unloaded for Godot jobs rendering there
+REGISTRY = pathlib.Path.home() / ".local/state/studio/projects"
+# -nocrashreports: a crashed editor exits at once instead of waiting on the crash-reporter UI (and never uploads)
+UE_GPU_ARGS = ["-vulkan", "-sm6", f"-graphicsadapter={cfg['STUDIO_UE_ADAPTER']}", "-nocrashreports"]
+# Godot: the default editor binary (godot-refresh keeps ~/.local/bin/godot pointing at the active release)
+GODOT = os.environ.get("GODOT_BIN", str(pathlib.Path.home() / ".local/bin/godot"))
+GODOT_GPU_ARGS = ["--gpu-index", cfg["STUDIO_GODOT_GPU"]]   # a VULKAN device index
+GODOT_HOME = path("STUDIO_GODOT_HOME")
+# where Godot GPU jobs run: on a second GPU ("small": only small models there are unloaded, the worker LLM stays)
+# or on the render GPU like Unreal (True: the worker LLM is unloaded for the job)
+GODOT_GPU_JOB = "small" if cfg["STUDIO_GODOT_ON_SMALL_GPU"] == "1" else True
+GODOT_EXPORTS = {"linux": ("Linux", "build/linux/{name}.x86_64"), "web": ("Web", "build/web/index.html"),
+                 "windows": ("Windows", "build/windows/{name}.exe")}
+POLL = 0.5
+gpu_lock = threading.Lock()        # render-GPU jobs (Unreal, Blender GPU renders, Godot without a second GPU)
+small_gpu_lock = threading.Lock()  # second-GPU jobs (Godot, when STUDIO_GODOT_ON_SMALL_GPU=1)
+
+
+def log(msg):
+    print(time.strftime("%H:%M:%S"), msg, flush=True)
+
+
+class Reject(Exception):
+    pass
+
+
+def inside(root, p):
+    """Resolve p relative to root; reject anything that escapes the project."""
+    q = (root / p).resolve()
+    if q != root and root not in q.parents:
+        raise Reject(f"path escapes project: {p}")
+    return q
+
+
+def need_unreal():
+    if not UE_ROOT or not UE_EDITOR.exists():
+        raise Reject("Unreal Engine is not configured: set STUDIO_UE_ROOT in ~/.config/studio/studio.env")
+
+
+def find_uproject(root, arg):
+    q = inside(root, arg)
+    if q.suffix != ".uproject" or not q.is_file():
+        raise Reject(f"not a .uproject file: {arg}")
+    return q
+
+
+def unload_gpu_llm(models=None):
+    models = GPU_MODELS if models is None else models
+    if GPU_POLICY != "timeshare":
+        return []
+    try:
+        running = json.load(urllib.request.urlopen(LLAMA_URL + "/running", timeout=5)).get("running", [])
+    except Exception:
+        return []
+    unloaded = []
+    for m in running:
+        if m.get("model") in models:
+            req = urllib.request.Request(f"{LLAMA_URL}/api/models/unload/{m['model']}", method="POST")
+            try:
+                urllib.request.urlopen(req, timeout=60)
+                unloaded.append(m["model"])
+            except Exception as e:
+                log(f"unload {m['model']} failed: {e}")
+    for _ in range(60):  # wait for VRAM to actually be released
+        if not any(m in models for m in running_models()):
+            break
+        time.sleep(0.5)
+    return unloaded
+
+
+def running_models():
+    try:
+        return [m.get("model") for m in json.load(urllib.request.urlopen(LLAMA_URL + "/running", timeout=5)).get("running", [])]
+    except Exception:
+        return []
+
+
+# ------------------------------------------------------------------ actions
+# Each returns (argv, env_extra, timeout_s, gpu): gpu False = no GPU, True = render GPU (unloads the worker LLM),
+# "small" = second GPU (Godot; only small models there are unloaded)
+def a_ue_python(root, args):
+    need_unreal()
+    if len(args) < 2:
+        raise Reject("usage: ue-python <project.uproject> <script.py> [script args...]")
+    up, script = find_uproject(root, args[0]), inside(root, args[1])
+    if script.suffix != ".py" or not script.is_file():
+        raise Reject(f"not a python file: {args[1]}")
+    extra = " ".join(args[2:])
+    return ([str(UE_CMD), str(up), "-run=pythonscript", f"-script={script} {extra}".strip(), "-unattended",
+             "-nop4", "-nosplash", "-NullRHI", "-nocrashreports", "-stdout", "-FullStdOutLogOutput"], {}, 1800, False)
+
+
+def a_ue_render(root, args):
+    need_unreal()
+    if len(args) != 4:
+        raise Reject("usage: ue-render <project.uproject> </Game/...RenderConfig> </Game/...Sequence> </Game/...Map>")
+    up = find_uproject(root, args[0])
+    for a in args[1:]:
+        if not a.startswith("/Game/"):
+            raise Reject(f"asset paths must start with /Game/: {a}")
+    if not (up.parent / "Content/Python/init_unreal.py").is_file():
+        raise Reject("project has no Content/Python/init_unreal.py render hook (copy it from the studio template)")
+    env = {"STUDIO_RENDER": "1", "MRQ_CONFIG": args[1], "MRQ_SEQUENCE": args[2], "MRQ_MAP": args[3],
+           "SDL_VIDEODRIVER": "wayland"}
+    return ([str(UE_EDITOR), str(up), *UE_GPU_ARGS, "-nosplash", "-log", "-stdout", "-FullStdOutLogOutput"], env, 3600, True)
+
+
+def a_ue_build(root, args):
+    need_unreal()
+    if len(args) != 1:
+        raise Reject("usage: ue-build <project.uproject>")
+    up = find_uproject(root, args[0])
+    return ([str(UE_BUILD), f"{up.stem}Editor", "Linux", "Development", f"-Project={up}", "-WaitMutex"], {}, 3600, False)
+
+
+def a_ue_package(root, args):
+    need_unreal()
+    if len(args) != 1:
+        raise Reject("usage: ue-package <project.uproject>")
+    up = find_uproject(root, args[0])
+    out = inside(root, "Build/Linux")
+    return ([str(UE_UAT), "BuildCookRun", f"-project={up}", "-platform=Linux", "-clientconfig=Shipping",
+             "-build", "-cook", "-stage", "-pak", "-archive", f"-archivedirectory={out}", "-unattended",
+             "-utf8output", "-nop4"], {}, 7200, False)
+
+
+def a_blender(root, args):
+    if not args:
+        raise Reject("usage: blender <script.py> [-- script args]  (runs headless)")
+    script = inside(root, args[0])
+    if script.suffix != ".py" or not script.is_file():
+        raise Reject(f"not a python file: {args[0]}")
+    rest = args[1:]
+    if rest and rest[0] == "--":  # the broker adds its own "--"; a second one would shift the script's args
+        rest = rest[1:]
+    for a in rest:  # any path-looking arg must stay inside the project
+        if "/" in a and not a.startswith("-"):
+            inside(root, a)
+    gpu = "--render" in rest or "--gpu" in rest
+    rest = [a for a in rest if a not in ("--render", "--gpu")]
+    return (["blender", "-b", "--factory-startup", "--python", str(script), "--", *rest], {}, 3600, gpu)
+
+
+def a_encode(root, args):
+    if len(args) < 3:
+        raise Reject("usage: encode <frames-dir> <fps> <out.mp4|out.mov> [--prores]")
+    frames, out = inside(root, args[0]), inside(root, args[2])
+    if not re.fullmatch(r"\d{1,3}", args[1]):
+        raise Reject("fps must be an integer")
+    env = {"PRORES": "1"} if "--prores" in args[3:] else {}
+    return ([str(pathlib.Path.home() / ".local/bin/render-to-mp4"), str(frames), args[1], str(out)], env, 1800, False)
+
+
+def a_ue_play(root, args):
+    """Run the project as a game (editor binary, -game) with optional extra args; stops after a time limit."""
+    need_unreal()
+    if len(args) < 2:
+        raise Reject("usage: ue-play <project.uproject> </Game/...Map> [seconds=120] [game args like -autopilot]")
+    up = find_uproject(root, args[0])
+    if not args[1].startswith("/Game/"):
+        raise Reject("map must be a /Game/ path")
+    secs, extra = 120, args[2:]
+    if extra and re.fullmatch(r"\d{1,4}", extra[0]):
+        secs, extra = int(extra[0]), extra[1:]
+    for a in extra:
+        if not re.fullmatch(r"-[A-Za-z0-9_]+(=[A-Za-z0-9_./:-]*)?", a):
+            raise Reject(f"game args must look like -Flag or -Key=value: {a}")
+    argv = ["timeout", "--signal=TERM", "--kill-after=15", str(secs), str(UE_EDITOR), str(up), args[1], "-game",
+            "-windowed", "-resx=1280", "-resy=720", *UE_GPU_ARGS, "-nosplash", "-log", "-stdout",
+            "-FullStdOutLogOutput", *extra]
+    return (argv, {"SDL_VIDEODRIVER": "wayland"}, secs + 60, True)
+
+
+def a_run_packaged(root, args):
+    """Run the packaged Linux build in Build/Linux with optional game args; stops after a time limit."""
+    secs, extra = 120, list(args)
+    if extra and re.fullmatch(r"\d{1,4}", extra[0]):
+        secs, extra = int(extra[0]), extra[1:]
+    for a in extra:
+        if not re.fullmatch(r"-[A-Za-z0-9_]+(=[A-Za-z0-9_./:-]*)?", a):
+            raise Reject(f"game args must look like -Flag or -Key=value: {a}")
+    exes = sorted(inside(root, "Build/Linux").glob("*/*.sh")) + sorted(inside(root, "Build/Linux").glob("*.sh"))
+    if not exes:
+        raise Reject("no packaged build found under Build/Linux (run ue-package first)")
+    argv = ["timeout", "--signal=TERM", "--kill-after=15", str(secs), str(exes[0]), "-windowed", "-resx=1280",
+            "-resy=720", *UE_GPU_ARGS, "-log", "-stdout", "-FullStdOutLogOutput", *extra]
+    return (argv, {"SDL_VIDEODRIVER": "wayland"}, secs + 60, True)
+
+
+def godot_project(root):
+    if not (root / "project.godot").is_file():
+        raise Reject("not a Godot project (no project.godot at the project root)")
+
+
+def godot_bin(root):
+    """The newest installed engine of the project's minor version (project.godot config/features "4.7"), so a new
+    Godot minor installed by godot-refresh never silently upgrades an existing project; else the default engine."""
+    m = re.search(r'config/features=PackedStringArray\("(\d+)\.(\d+)"', (root / "project.godot").read_text())
+    if m:
+        cands = [p for p in GODOT_HOME.glob(f"{m.group(1)}.{m.group(2)}*/Godot_v*-stable_linux.x86_64")]
+        if cands:
+            return str(max(cands, key=lambda p: [int(x) for x in re.findall(r"\d+", p.parent.name)]))
+    return GODOT
+
+
+def godot_user_args(extra):
+    """Game args after `--` (read with OS.get_cmdline_user_args()): --flag or --key=value only."""
+    for a in extra:
+        if not re.fullmatch(r"--[A-Za-z0-9_-]+(=[A-Za-z0-9_./:,-]*)?", a):
+            raise Reject(f"game args must look like --flag or --key=value: {a}")
+    return ["--", *extra] if extra else []
+
+
+def res_path(root, arg, suffixes):
+    """Project file -> res:// path (accepts 'scenes/x.tscn' or 'res://scenes/x.tscn')."""
+    rel = arg[6:] if arg.startswith("res://") else arg
+    q = inside(root, rel)
+    if q.suffix not in suffixes or not q.is_file():
+        raise Reject(f"not a {'/'.join(suffixes)} file in the project: {arg}")
+    return "res://" + str(q.relative_to(root))
+
+
+def a_godot_check(root, args):
+    godot_project(root)
+    return ([str(pathlib.Path(__file__).resolve().parent / "godot-check-all")], {"GODOT_BIN": godot_bin(root)}, 900, False)
+
+
+def a_godot_script(root, args):
+    """Headless SceneTree/MainLoop script (generators: build and save scenes/resources). No GPU."""
+    godot_project(root)
+    if not args:
+        raise Reject("usage: godot-script <script.gd> [--flag --key=value ...]  (script extends SceneTree)")
+    script = res_path(root, args[0], (".gd",))
+    return ([godot_bin(root), "--headless", "--path", str(root), "--script", script, *godot_user_args(args[1:])], {}, 1800, False)
+
+
+def a_godot_import(root, args):
+    godot_project(root)
+    return ([godot_bin(root), "--headless", "--path", str(root), "--import"], {}, 1800, False)
+
+
+def a_godot_play(root, args):
+    """Run the game windowed for N seconds (default 60) and return its log: GAME_ markers, errors."""
+    godot_project(root)
+    scene, rest = [], list(args)
+    if rest and rest[0].endswith(".tscn"):
+        scene, rest = [res_path(root, rest[0], (".tscn",))], rest[1:]
+    secs = 60
+    if rest and re.fullmatch(r"\d{1,4}", rest[0]):
+        secs, rest = int(rest[0]), rest[1:]
+    headless = "--headless" in rest
+    rest = [a for a in rest if a != "--headless"]
+    mode = ["--headless"] if headless else [*GODOT_GPU_ARGS, "--resolution", "1280x720"]
+    argv = ["timeout", "--signal=TERM", "--kill-after=10", str(secs), godot_bin(root), "--path", str(root), *mode,
+            *scene, *godot_user_args(rest)]
+    return (argv, {}, secs + 60, False if headless else GODOT_GPU_JOB)
+
+
+def a_godot_movie(root, args):
+    """Movie Maker: render <frames> frames of a scene at a fixed fps to <out_dir>/frame########.png (+ frame.wav)."""
+    godot_project(root)
+    if len(args) < 3:
+        raise Reject("usage: godot-movie <scene.tscn> <out_dir> <frames> [fps=30] [--game-args]")
+    scene = res_path(root, args[0], (".tscn",))
+    out = inside(root, args[1])
+    if not re.fullmatch(r"\d{1,5}", args[2]):
+        raise Reject("frames must be an integer")
+    rest, fps = args[3:], "30"
+    if rest and re.fullmatch(r"\d{1,3}", rest[0]):
+        fps, rest = rest[0], rest[1:]
+    if out.exists():
+        for f in out.glob("frame*.png"):
+            f.unlink()
+    out.mkdir(parents=True, exist_ok=True)
+    (out / ".gdignore").touch()  # frames must not be imported as project assets
+    argv = [godot_bin(root), "--path", str(root), *GODOT_GPU_ARGS, "--write-movie", str(out / "frame.png"), "--fixed-fps", fps,
+            "--quit-after", args[2], "--disable-vsync", scene, *godot_user_args(rest)]
+    return (argv, {}, 7200, GODOT_GPU_JOB)
+
+
+def godot_export_paths(root):
+    """{preset name: export_path} from export_presets.cfg (studio-new sets the paths to build/<platform>/<Name>)."""
+    cfg = root / "export_presets.cfg"
+    out, name = {}, None
+    if cfg.is_file():
+        for line in cfg.read_text().splitlines():
+            m = re.match(r'name="(.*)"$', line.strip())
+            if m:
+                name = m.group(1)
+            m = re.match(r'export_path="(.*)"$', line.strip())
+            if m and name and m.group(1):
+                out[name] = m.group(1)
+    return out
+
+
+def a_godot_export(root, args):
+    """Export with presets from export_presets.cfg: linux | web | windows | all. Release unless --debug."""
+    godot_project(root)
+    if not args or args[0] not in (*GODOT_EXPORTS, "all"):
+        raise Reject("usage: godot-export <linux|web|windows|all> [--debug]")
+    targets = list(GODOT_EXPORTS) if args[0] == "all" else [args[0]]
+    mode = "--export-debug" if "--debug" in args[1:] else "--export-release"
+    name = re.sub(r"[^A-Za-z0-9_-]", "", root.name) or "game"
+    presets = godot_export_paths(root)
+    cmds = []
+    for tgt in targets:
+        preset, out = GODOT_EXPORTS[tgt]
+        dst = inside(root, presets.get(preset) or out.format(name=name))
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        (root / "build/.gdignore").touch()  # keep Godot from importing the exported files
+        cmds.append(f"echo 'GODOT_EXPORT {tgt} -> {dst.relative_to(root)}' && "
+                    f"{shlex.quote(godot_bin(root))} --headless --path {shlex.quote(str(root))} {mode} {shlex.quote(preset)} "
+                    f"{shlex.quote(str(dst))} && test -s {shlex.quote(str(dst))} && echo 'GODOT_EXPORT {tgt} ok'")
+    return (["bash", "-c", " && ".join(cmds)], {}, 1800, False)
+
+
+def a_run_export(root, args):
+    """Run the exported Linux build (build/linux/*.x86_64) for N seconds with game args."""
+    secs, rest = 120, list(args)
+    if rest and re.fullmatch(r"\d{1,4}", rest[0]):
+        secs, rest = int(rest[0]), rest[1:]
+    exes = sorted(inside(root, "build/linux").glob("*.x86_64")) if (root / "build/linux").is_dir() else []
+    if not exes:
+        raise Reject("no Linux export under build/linux (run: studio godot-export linux)")
+    headless = "--headless" in rest
+    rest = [a for a in rest if a != "--headless"]
+    mode = ["--headless"] if headless else [*GODOT_GPU_ARGS, "--resolution", "1280x720"]
+    argv = ["timeout", "--signal=TERM", "--kill-after=10", str(secs), str(exes[0]), *mode, *godot_user_args(rest)]
+    return (argv, {}, secs + 60, False if headless else GODOT_GPU_JOB)
+
+
+ACTIONS = {"ue-python": a_ue_python, "ue-render": a_ue_render, "ue-build": a_ue_build,
+           "ue-package": a_ue_package, "blender": a_blender, "encode": a_encode,
+           "ue-play": a_ue_play, "run-packaged": a_run_packaged,
+           "godot-check": a_godot_check, "godot-script": a_godot_script, "godot-import": a_godot_import,
+           "godot-play": a_godot_play, "godot-movie": a_godot_movie, "godot-export": a_godot_export,
+           "run-export": a_run_export}
+
+LOG_SIGNAL = re.compile(r"Error|error:|Fatal|Traceback|Exception|FAILED|warning: |LogPython: |BUILD_|RENDER_|STUDIO_|GAME_|GODOT_|godot-lint|godot-check|\.gd:\d+|Result: |Total execution time|BUILD SUCCESSFUL|AutomationTool exiting", re.I)
+
+
+def summarize(log_path, code, max_lines=60):
+    """Errors and script markers; the log tail only on failure. Keeps worker context small."""
+    lines = log_path.read_text(errors="replace").splitlines()
+    noise = re.compile(r"LogConfig: Set CVar|ErrorTest|Error test|Error with|UnifiedErrorTest|Icon_error|LogConsoleManager")
+    hits = [l for l in lines if LOG_SIGNAL.search(l) and not noise.search(l)]
+    tail = lines[-20:] if code != 0 or log_path.name.endswith(("-blender.log", "-encode.log")) else []
+    out = hits[-(max_lines - len(tail)):] + (["----- last lines -----"] + tail if tail else [])
+    return "\n".join(l[:300] for l in out)
+
+
+def handle(root, req_path):
+    res_dir = root / ".studio/spool/res"
+    log_dir = root / ".studio/logs"
+    res_dir.mkdir(parents=True, exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        req = json.loads(req_path.read_text())
+        rid = re.sub(r"[^A-Za-z0-9_.-]", "", str(req["id"]))[:64]
+    except Exception as e:
+        log(f"bad request {req_path}: {e}")
+        req_path.unlink(missing_ok=True)
+        return
+    req_path.unlink(missing_ok=True)
+    action, args = req.get("action"), [str(a) for a in req.get("args", [])]
+    started = time.time()
+    result = {"id": rid, "action": action, "args": args}
+    try:
+        if action not in ACTIONS:
+            raise Reject(f"unknown action {action!r}; available: {', '.join(sorted(ACTIONS))}")
+        argv, env_extra, timeout, gpu_heavy = ACTIONS[action](root, args)
+        lock = small_gpu_lock if gpu_heavy == "small" else gpu_lock if gpu_heavy else _nolock()
+        to_unload = SMALL_MODELS if gpu_heavy == "small" else GPU_MODELS
+        log_path = log_dir / f"{rid}-{action}.log"
+        env = {**os.environ, **env_extra, "CUDA_DEVICE_ORDER": "PCI_BUS_ID"}
+        with lock:
+            unloaded = unload_gpu_llm(to_unload) if gpu_heavy else []
+            log(f"[{root.name}] {action} {' '.join(args)}" + (f" (unloaded {unloaded})" if unloaded else ""))
+            with open(log_path, "w") as lf:
+                try:
+                    p = subprocess.run(argv, cwd=root, env=env, stdout=lf, stderr=subprocess.STDOUT,
+                                       stdin=subprocess.DEVNULL, timeout=timeout)
+                    code = p.returncode
+                except subprocess.TimeoutExpired:
+                    code = 124
+        result.update(exit=code, log=str(log_path.relative_to(root)), unloaded_llm=unloaded,
+                      summary=summarize(log_path, code))
+    except Reject as e:
+        result.update(exit=2, error=str(e))
+    except Exception as e:
+        result.update(exit=1, error=f"broker error: {e}")
+    result["duration_s"] = round(time.time() - started, 1)
+    tmp = res_dir / f".{rid}.json.tmp"
+    tmp.write_text(json.dumps(result, indent=1))
+    tmp.rename(res_dir / f"{rid}.json")
+    log(f"[{root.name}] {action} -> exit {result.get('exit')} in {result['duration_s']}s")
+
+
+class _nolock:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def projects():
+    if not REGISTRY.exists():
+        return []
+    out = []
+    for line in REGISTRY.read_text().splitlines():
+        p = pathlib.Path(line.strip())
+        if line.strip() and (p / ".studio").is_dir():
+            out.append(p.resolve())
+    return out
+
+
+def main():
+    REGISTRY.parent.mkdir(parents=True, exist_ok=True)
+    log(f"studio-broker up; policy={GPU_POLICY}; registry={REGISTRY}")
+    busy = set()
+    while True:
+        for root in projects():
+            req_dir = root / ".studio/spool/req"
+            if not req_dir.is_dir():
+                continue
+            for req in sorted(req_dir.glob("*.json")):
+                if req in busy:
+                    continue
+                busy.add(req)
+
+                def run(root=root, req=req):
+                    try:
+                        handle(root, req)
+                    finally:
+                        busy.discard(req)
+                threading.Thread(target=run, daemon=True).start()
+        time.sleep(POLL)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

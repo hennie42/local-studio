@@ -1,0 +1,103 @@
+# Models: what we tested, what won, and why
+
+Everything here was measured on one **reference machine**: Intel i9-10920X (12 cores), 64 GB DDR4, an
+**RTX 5070 Ti 16 GB** (the worker GPU) and an **RTX 2060 6 GB** (small models, Godot rendering), Linux (CachyOS),
+llama.cpp via llama-swap, Claude Code as the worker harness. Scores come from the graded capability suites in
+`evals/` (graders are validated against reference solutions before any model runs), plus what happened in real
+productions. Other hardware: see [Choosing for your hardware](#choosing-for-your-hardware).
+
+**Short version**
+
+| role | model | why |
+|---|---|---|
+| default worker (Unreal, Blender, coding, ffmpeg, audio) | **Qwen3.6-35B-A3B** (UD-Q4_K_XL, experts partly in RAM) | 19/20 runs passed in the capability suite and fastest: median 2-7 min per task, smallest contexts |
+| retry / long context / look-critical steps | **Bonsai 2 27B** (Qwen3.8-27B in ternary weights, PrismML fork) | also 19/20, a *different* model (a retry doesn't repeat the first one's blind spot), 188K context recall 3/3, best-looking renders by eye; ~3x slower |
+| Godot (GDScript) worker | **Gemma 4 26B-A4B** (UD-Q4_K_XL) - provisional | Godot suite: every task passed, 3x faster than the other passing model (see below) |
+| quick log triage on a small second GPU | Spark-X2.5-4B | 0.75 on log triage in ~20 s; never for multi-step tool work |
+| director | Claude (Claude Code) | plans, reviews, makes the visual calls; local workers draft and the director verifies |
+
+## Capability suite (2026-10-07/08)
+
+14 tasks in 7 areas: coding (bug fix, feature, C++), Unreal (scene, sequence, C++ actor, render via the broker),
+Blender + media (model a prop, ffmpeg edit, procedural audio), vision (exposure and defect judgement on frames), long
+context recall, and Unreal log triage. Agent tasks run 2 reps; full table: `evals/scorecard-20261008.md`.
+
+| model (Claude Code harness) | coding | Unreal | Blender + media | vision | long ctx | log triage |
+|---|---|---|---|---|---|---|
+| Qwen3.6-35B-A3B | 6/6, median 2.3 min | 8/8, 3.4 min | 5/6 (a prop's base above z=0) | 0.96 | 106K: 3/3 | 0.62 |
+| Bonsai 2 27B | 5/6, 9.6 min | 8/8, 5.9 min | 6/6 | 0.96 | **188K: 3/3** | **0.88** |
+| Qwen3.8-27B Q3 | - | - | - | **0.97** | 49K max | 0.44 |
+| Spark-X2.5-4B (OpenCode) | 0.82 | - | 0/2 | - | 26K: 3/3 | 0.75 in 0.4 min |
+| Qwen3.5-4B / 9B (OpenCode) | 1/2 | - | 0/4 | 0.87 (4B) | small | 0.25 |
+
+**Harness matters as much as the model.** The same Bonsai model in OpenCode instead of Claude Code: Unreal 2/3
+instead of 8/8, Blender/media equal, coding slightly worse, and slower with larger contexts. All workers now run in
+Claude Code (`claude-local`). One OpenCode run was excluded because the worker read its own grader: that led to the
+stricter sandbox (workers can read nothing outside their project).
+
+**Small models** (4-9B on the 6 GB card) can fix a single file or triage a log, but fail multi-step tool work
+(Blender 0/3, ffmpeg 0/3): they never get delegated agent tasks.
+
+## Godot suite (2026-10-14/15)
+
+4 tasks: port four Godot 3 scripts to 4.7 (behaviour tests), a race-logic class against 21 hidden tests, a 2D
+platformer whose **exported Linux build** must finish the level on autopilot, and a 3D clip via Movie Maker. Same
+prompts and time limits for every model. Table: `evals/scorecard-godot-20261014.md`.
+
+| model | port | race logic | platformer + export | clip | passed | worker time |
+|---|---|---|---|---|---|---|
+| **Gemma 4 26B-A4B** | 1.00 | 1.00 | 1.00 | 1.00 | **4/4** | **32 min** |
+| **Bonsai 2 27B** | 1.00 | 1.00 | 1.00 | 1.00 | **4/4** | 95 min |
+| Qwen3.6-35B-A3B | 1.00 | 0.96 | 0.35 (timeout) | 0.70 | 1/4 | 101 min |
+| Qwen3.8-27B Q3 | 1.00 | 0.00 | 0.25 | 0.15 | 1/4 | context-capped |
+| Mellum2.1 12B-A2.5B | 0.00 | 0.00 | 0.25 | 0.15 | 0/4 | gave up |
+
+- **Godot 3 drift was not the problem.** Research and community reports say local models mix Godot 3 syntax into
+  Godot 4 code; with the tooling (a version-exact API reference in every project, a drift linter, a full compile
+  check, verified cookbook recipes) none of the three capable models shipped any. Failures were **behaviour** (an
+  autopilot that couldn't time the jump over a gap, a spec edge case) and **time**.
+- **Gemma 4** solved every task with the fewest turns and smallest contexts. By eye its clip was the weakest of the
+  passing ones (blown-out floor), so look-critical steps go to Bonsai.
+- **Mellum2.1** (12B, fast: 245 tok/s) mistook Claude Code's long system prompt for the user's message and replied
+  "I'm ready to help!": too small for this harness.
+- **Qwen3.8-27B** only fits in 16 GB as Q3 with a 49K context; Claude Code's system prompt plus the task overflow it
+  and auto-compaction fails. Its scores measure the context cap, not the model. (Its own chat template also rejects
+  Claude Code's `developer` role: we give it Bonsai's template, from the same model family.)
+- **Second runs** (rep 2) are being added to confirm the ranking; until then the Godot routing is provisional.
+
+## What production taught us (beyond the suites)
+
+The suites are small tasks. In real productions (a 20 s Unreal film, a C++ Unreal game, a 10 s comparison clip):
+- Workers are strong on code and API plumbing and **weak on spatial maths**: scale units (a 100x error made 17 km
+  towers), bounds used as positions, hand-made rotations. Their own checks don't catch it. Prescribing tested
+  helpers (`su.wall_panel`, `su.face_point`) fixed it: the same city step that failed twice in the film passed on the
+  first try in the comparison clip.
+- Code that compiles is not a working game: in the C++ game nine bugs compiled cleanly (overlap flags, tick
+  disabled, input class) and only the self-playing **autopilot** test found them. Every game gets one.
+- Every GPU job used to unload the worker LLM (2-4 min to reload and re-read 60-100K tokens of context); for Godot
+  that dominated the run time. Godot now renders on the small GPU and runs logic headless.
+- Workers loaded the user's own MCP servers (outside the sandbox, ~100 extra tools in every request): workers now
+  start with no MCP servers. Base context for a task dropped from 43K to 23K tokens.
+
+## Choosing for your hardware
+
+`install.sh` suggests a profile from your GPUs; profiles live in `models/profiles/` and only the reference one is
+measured. The others are estimates from the same models and the VRAM each needs:
+
+| profile | GPU | worker | retry | Godot | notes |
+|---|---|---|---|---|---|
+| `online` | none needed | Claude Sonnet | Claude Opus | Claude Sonnet | API costs; no local setup; the studio works the same |
+| `8gb` | 8 GB | Bonsai 2 (49K ctx) | Qwen3.6 (mostly in RAM, slow) | Bonsai 2 | small contexts: consider `online` or mixed for big steps |
+| `12gb` | 12 GB | Bonsai 2 (131K) | Gemma 4 (experts in RAM) | Gemma 4 | |
+| `16gb` | 16 GB | Qwen3.6 | Bonsai 2 | Gemma 4 | the reference models without the small GPU |
+| `16gb+6gb-reference` | 16 GB + 6 GB | Qwen3.6 | Bonsai 2 | Gemma 4 | **measured** |
+| `24gb` | 24 GB | Gemma 4 (all in VRAM) | Bonsai 2 | Gemma 4 | |
+
+RAM matters for MoE models whose experts live in system RAM (Qwen3.6, Gemma 4 on smaller cards): faster RAM means
+faster generation, and with **128 GB** the strongest open model we looked at, Qwen3.8-Flash-Next (125B MoE, 6B
+active), becomes practical (users report ~600 tok/s prompt processing and ~15 tok/s generation on a 16 GB card +
+128 GB RAM; with 64 GB it doesn't fit). Research notes and sources: `docs/godot-model-research-20261014.md`.
+
+**Adding a model:** add it to `models/catalog.json` (files, flags, context, vision), put it in a profile, run
+`install.sh --no-build` (or `models/download.sh` + `models/gen-config.py llama-swap`), then measure it:
+`evals/harness.py run --tasks '*' --models <id> --agents claude` and compare with the scorecards.

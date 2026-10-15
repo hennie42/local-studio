@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""godot-api-gen <out-dir> <xml-dir>...
+
+Turn Godot's class-reference XML (doc/classes + modules/*/doc_classes of the exact engine release) into compact,
+grep-friendly text: one <Class>.txt per class (signatures + first sentence of each description) and INDEX.txt
+(one line per class). Studio projects get a copy in godot-api/ so sandboxed workers can look up the real 4.x API
+instead of trusting their (often Godot 3) memory.
+"""
+import pathlib
+import re
+import sys
+import xml.etree.ElementTree as ET
+
+
+def clean(text, limit=None):
+    if not text:
+        return ""
+    t = re.sub(r"\[codeblocks?\].*?\[/codeblocks?\]", " ", text, flags=re.S)
+    t = re.sub(r"\[(?:method|member|signal|constant|enum|annotation|theme_item|param|operator|constructor) ([^\]]+)\]",
+               r"\1", t)
+    t = re.sub(r"\[url=[^\]]*\]([^\[]*)\[/url\]", r"\1", t)
+    t = re.sub(r"\[/?(?:code|b|i|kbd|br|u|s|center|lb|rb|color[^\]]*|font[^\]]*)\]", "", t)
+    t = re.sub(r"\[([A-Z@][A-Za-z0-9_.@]*)\]", r"\1", t)   # [ClassName] -> ClassName
+    t = " ".join(t.split())
+    if limit and len(t) > limit:
+        cut = t.find(". ", 0, limit)
+        t = t[: cut + 1] if cut > 40 else t[:limit].rstrip() + " ..."
+    return t
+
+
+def first_sentence(text, limit=220):
+    t = clean(text)
+    m = re.match(r"(.+?\.)(\s|$)", t)
+    s = m.group(1) if m else t
+    return s if len(s) <= limit else s[:limit].rstrip() + " ..."
+
+
+def params(el):
+    out = []
+    for p in sorted(el.findall("param"), key=lambda p: int(p.get("index", 0))):
+        s = f"{p.get('name')}: {p.get('type')}"
+        if p.get("default") is not None:
+            s += f" = {p.get('default')}"
+        out.append(s)
+    return ", ".join(out)
+
+
+def render(cls):
+    name, parent = cls.get("name"), cls.get("inherits")
+    lines = [f"class {name}" + (f" extends {parent}" for _ in [0]).__next__() if parent else f"class {name}"]
+    brief = clean(cls.findtext("brief_description"))
+    if brief:
+        lines.append(f"  {brief}")
+    desc = clean(cls.findtext("description"), 700)
+    if desc and desc != brief:
+        lines.append(f"  {desc}")
+    sections = [
+        ("constructors", "constructors/constructor"),
+        ("properties", "members/member"),
+        ("methods", "methods/method"),
+        ("operators", "operators/operator"),
+        ("signals", "signals/signal"),
+        ("annotations", "annotations/annotation"),
+    ]
+    for title, path in sections:
+        items = cls.findall(path)
+        if not items:
+            continue
+        lines.append(f"{title}:")
+        for it in items:
+            d = first_sentence(it.findtext("description") or it.text)
+            if title == "properties":
+                sig = f"{it.get('name')}: {it.get('type')}"
+                if it.get("default") is not None:
+                    sig += f" = {it.get('default')}"
+                if it.get("setter") or it.get("getter"):
+                    sig += f"  [set_/get_: {it.get('setter') or '-'} / {it.get('getter') or '-'}]"
+            elif title == "signals":
+                sig = f"signal {it.get('name')}({params(it)})"
+            else:
+                ret = it.find("return")
+                rt = ret.get("type") if ret is not None else "void"
+                q = f" {it.get('qualifiers')}" if it.get("qualifiers") else ""
+                sig = f"{it.get('name')}({params(it)}) -> {rt}{q}"
+            if it.get("deprecated") is not None:
+                sig += "  [DEPRECATED]"
+            lines.append(f"  {sig}" + (f"  # {d}" if d else ""))
+    consts = cls.findall("constants/constant")
+    if consts:
+        lines.append("constants:")
+        enums = {}
+        for c in consts:
+            enums.setdefault(c.get("enum") or "", []).append(c)
+        for en, cs in enums.items():
+            vals = ", ".join(f"{c.get('name')} = {c.get('value')}" for c in cs)
+            lines.append(f"  {'enum ' + en + ': ' if en else ''}{vals}")
+    return "\n".join(lines) + "\n", f"{name}" + (f" < {parent}" if parent else "") + (f": {brief}" if brief else "")
+
+
+def main():
+    if len(sys.argv) < 3:
+        sys.exit(__doc__)
+    out = pathlib.Path(sys.argv[1])
+    out.mkdir(parents=True, exist_ok=True)
+    index = []
+    files = []
+    for d in sys.argv[2:]:
+        files += sorted(pathlib.Path(d).rglob("*.xml"))
+    seen = set()
+    for f in files:
+        try:
+            cls = ET.parse(f).getroot()
+        except ET.ParseError:
+            continue
+        if cls.tag != "class" or cls.get("name") in seen:
+            continue
+        seen.add(cls.get("name"))
+        text, idx = render(cls)
+        (out / f"{cls.get('name')}.txt").write_text(text)
+        index.append(idx)
+    (out / "INDEX.txt").write_text(
+        "Godot class reference (generated from the engine's own docs). One line per class: Name < Parent: brief.\n"
+        "Details: <Name>.txt (properties, methods with signatures, signals, constants). "
+        "GDScript keywords/annotations: @GDScript.txt; global functions/enums: @GlobalScope.txt.\n\n"
+        + "\n".join(sorted(index, key=str.lower)) + "\n")
+    print(f"{len(seen)} classes -> {out}")
+
+
+if __name__ == "__main__":
+    main()

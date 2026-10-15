@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# godot-check-all: run from a Godot project root. 1) godot-lint (Godot 3 idioms, all hits with line numbers),
+# 2) compile every .gd inside a running SceneTree (autoloads registered, unlike --check-only), listing all
+# parse/type errors with file:line. Exit 1 if either finds a problem.
+set -uo pipefail
+GODOT=${GODOT_BIN:-godot}
+here=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
+[[ -f project.godot ]] || { echo "error: no project.godot in $(pwd)"; exit 2; }
+rc=0
+"$here/bin/godot-lint" . || rc=1
+mkdir -p .studio
+cp "$here/lib/godot_check_scripts.gd" .studio/check_scripts.gd
+[[ -d .godot ]] || "$GODOT" --headless --path . --import >/dev/null 2>&1
+out=$(timeout 300 "$GODOT" --headless --path . --script res://.studio/check_scripts.gd 2>&1)
+code=$?
+# error line + its "at: res://file:LINE" location, de-duplicated (Godot prints each error twice: load + reload)
+awk '/SCRIPT ERROR|^ERROR:/ {msg=$0; next}
+     /at: .*res:\/\// && msg != "" {loc=$0; sub(/.*\(res:\/\//, "", loc); sub(/\).*/, "", loc);
+       m=msg; sub(/^ *SCRIPT ERROR: */, "", m); k=loc "|" m; if (!(k in seen)) {seen[k]=1; print loc ": " m}; msg=""; next}
+     /GODOT_CHECK/ {print}' <<<"$out"
+((code != 0)) && rc=1
+grep -q "GODOT_CHECK .* script(s)" <<<"$out" || { echo "godot-check: checker did not finish (exit $code)"; tail -5 <<<"$out"; rc=1; }
+exit $rc

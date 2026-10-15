@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Launch the Unreal Editor (interactive) on the configured render GPU (STUDIO_UE_ADAPTER).
+# With local models on the same GPU it stops llama-swap first so the VRAM is free; the next local-model request
+# starts it again.
+eval "$(python3 "$(dirname "$(readlink -f "$0")")/../lib/studio_config.py" --shell)"
+UE_ROOT="${STUDIO_UE_ROOT:?set STUDIO_UE_ROOT in ~/.config/studio/studio.env}"
+if [[ -n $STUDIO_GPU_MODELS ]] && systemctl --user is-active -q llama-swap; then
+  echo "Stopping llama-swap to free the render GPU..."
+  systemctl --user stop llama-swap
+fi
+# Native Wayland window: under some compositors' Xwayland (e.g. niri's xwayland-satellite), X11 Vulkan presentation
+# only works from the GPU driving the display ("Cannot find a compatible Vulkan device that supports surface
+# presentation"); a native Wayland window works from any GPU.
+[[ -n ${WAYLAND_DISPLAY:-} ]] && export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-wayland}"
+# Vulkan device order: 0 = RTX 2060, 1 = RTX 5070 Ti
+# -sm6: Shader Model 6, required for hardware ray tracing (path tracer, HW Lumen) on Vulkan
+exec "$UE_ROOT/Engine/Binaries/Linux/UnrealEditor" -vulkan -sm6 -graphicsadapter="$STUDIO_UE_ADAPTER" "$@"

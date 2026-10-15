@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# studio-sandbox <project-dir> -- <command...>
+# Run a command (e.g. `opencode run ...`) confined to a studio project:
+#  - visible: /usr, /etc, /sys (ro); the project (rw); opencode's state/config; the studio client (ro)
+#  - NOT visible: /home (beyond the above), /data (beyond the project), /run, other users' files
+#  - no network except the local LLM: 127.0.0.1:8080 inside is bridged over a unix socket to llama-swap
+set -euo pipefail
+ws=$(readlink -f "${1:?usage: studio-sandbox <project-dir> -- <command...>}"); shift
+[[ ${1:-} == -- ]] && shift
+(($#)) || { echo "no command" >&2; exit 2; }
+STUDIO=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
+H=$HOME
+mkdir -p "$ws/.studio" "$H/.local/share/opencode" "$H/.local/state/opencode" "$H/.cache/opencode"
+sock="$ws/.studio/llm-$$.sock"
+socat "UNIX-LISTEN:$sock,fork,unlink-early" "TCP:127.0.0.1:${LLAMA_PORT:-8080}" &
+bridge=$!
+trap 'kill $bridge 2>/dev/null; rm -f "$sock"' EXIT
+for _ in $(seq 1 50); do [[ -S $sock ]] && break; sleep 0.1; done
+
+args=(--die-with-parent --new-session --unshare-net --unshare-pid --unshare-ipc --unshare-uts
+      --ro-bind /usr /usr --ro-bind /etc /etc --ro-bind /sys /sys
+      --symlink usr/bin /bin --symlink usr/bin /sbin --symlink usr/lib /lib --symlink usr/lib /lib64
+      --proc /proc --dev /dev --tmpfs /tmp --tmpfs /var/tmp --tmpfs /run --tmpfs /home --tmpfs /data
+      --ro-bind "$STUDIO/bin" "$STUDIO/bin" --ro-bind "$STUDIO/lib" "$STUDIO/lib"
+      --bind "$H/.local/share/opencode" "$H/.local/share/opencode"
+      --bind "$H/.local/state/opencode" "$H/.local/state/opencode"
+      --bind "$H/.cache/opencode" "$H/.cache/opencode")
+# opencode's global config (may be a symlink into another repo): expose just the resolved file
+if [[ -e $H/.config/opencode/opencode.json ]]; then
+  cfg=$(readlink -f "$H/.config/opencode/opencode.json")
+  args+=(--ro-bind "$cfg" "$H/.config/opencode/opencode.json")
+fi
+args+=(--bind "$ws" "$ws" --chdir "$ws" --setenv HOME "$H"
+       --setenv PATH "$STUDIO/bin:/usr/local/bin:/usr/bin")
+# inside: bridge 127.0.0.1:8080 -> the unix socket, then run the command
+exec bwrap "${args[@]}" /usr/bin/bash -c '
+  socat TCP-LISTEN:8080,bind=127.0.0.1,fork,reuseaddr "UNIX-CONNECT:$0" &
+  for _ in $(seq 1 50); do (exec 3<>/dev/tcp/127.0.0.1/8080) 2>/dev/null && break; sleep 0.1; done
+  exec "$@"' "$sock" "$@"

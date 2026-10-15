@@ -1,0 +1,12 @@
+[Unit]
+Description=studio-broker: vetted GPU/engine jobs for sandboxed local-LLM workers
+After=llama-swap.service
+
+[Service]
+Environment=STUDIO_GPU_POLICY=timeshare
+ExecStart=%h/.local/bin/studio-broker
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

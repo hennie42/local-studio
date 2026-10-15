@@ -1,0 +1,240 @@
+[2026.10.07-08.18.42:261][  0]LogEditorDataStorageUI: Warning: Unable to register widget factory 'DynamicAssetDataColumnBaseWidgetConstructor' as purpose '0' isn't registered.
+[2026.10.07-08.18.42:261][  0]LogEditorDataStorageUI: Warning: Unable to register widget factory 'StaticMeshTrianglesWidgetConstructor' as purpose '0' isn't registered.
+[2026.10.07-08.18.42:262][  0]LogEditorDataStorageUI: Warning: Unable to register widget factory 'AlertWidgetConstructor' as purpose '0' isn't registered.
+[2026.10.07-08.18.42:262][  0]LogEditorDataStorageUI: Warning: Unable to register widget factory 'AlertHeaderWidgetConstructor' as purpose '0' isn't registered.
+[2026.10.07-08.18.42:262][  0]LogEditorDataStorageUI: Warning: Unable to register widget factory 'OutlinerUnsavedWidgetConstructor' as purpose '0' isn't registered.
+[2026.10.07-08.18.42:262][  0]LogEditorDataStorageUI: Warning: Unable to register widget factory 'OutlinerUnsavedHeaderConstructor' as purpose '0' isn't registered.
+[2026.10.07-08.18.42:262][  0]LogEditorDataStorageUI: Warning: Unable to register widget factory 'SocketWidgetConstructor' as purpose '0' isn't registered.
+[2026.10.07-08.18.42:262][  0]LogEditorDataStorageUI: Warning: Unable to register widget factory 'TypeInfoWidgetConstructor' as purpose '0' isn't registered.
+[2026.10.07-08.18.42:262][  0]LogEditorDataStorageUI: Warning: Unable to register widget factory 'VisibilityWidgetConstructor' as purpose '0' isn't registered.
+[2026.10.07-08.18.42:262][  0]LogEditorDataStorage: Initialized
+[2026.10.07-08.18.42:264][  0]LogInit: Display: Starting Game.
+[2026.10.07-08.18.42:264][  0]LogGlobalStatus: Browse Started Browse: "/Game/Demo/DemoMap?Name=Player"
+[2026.10.07-08.18.42:264][  0]LogNet: Browse: /Game/Demo/DemoMap?Name=Player
+[2026.10.07-08.18.42:264][  0]LogLoad: LoadMap: /Game/Demo/DemoMap?Name=Player
+[2026.10.07-08.18.42:264][  0]LogWorld: BeginTearingDown for /Temp/Untitled_0
+[2026.10.07-08.18.42:264][  0]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.10.07-08.18.42:264][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.07-08.18.42:293][  0]LogAudio: Display: Audio Device unregistered from world 'Untitled'.
+[2026.10.07-08.18.42:295][  0]LogUObjectHash: Compacting FUObjectHashTables data took   0.85ms
+[2026.10.07-08.18.42:318][  0]LogAudio: Display: Audio Device (ID: 1) registered with world 'DemoMap'.
+[2026.10.07-08.18.42:318][  0]LogChaosDD: Creating Chaos Debug Draw Scene for world DemoMap
+[2026.10.07-08.18.42:321][  0]LogModuleManager: InternalLoadLibrary: 'AIModule' ('/opt/UnrealEngine/Engine/Binaries/Linux/libUnrealEditor-AIModule.so')
+[2026.10.07-08.18.42:325][  0]LogModuleManager: InternalLoadLibrary: 'NavigationSystem' ('/opt/UnrealEngine/Engine/Binaries/Linux/libUnrealEditor-NavigationSystem.so')
+[2026.10.07-08.18.42:329][  0]LogModuleManager: InternalLoadLibrary: 'AITestSuite' ('/opt/UnrealEngine/Engine/Binaries/Linux/libUnrealEditor-AITestSuite.so')
+[2026.10.07-08.18.42:332][  0]LogModuleManager: InternalLoadLibrary: 'GameplayDebugger' ('/opt/UnrealEngine/Engine/Binaries/Linux/libUnrealEditor-GameplayDebugger.so')
+[2026.10.07-08.18.42:338][  0]LogLoad: Game class is 'GameModeBase'
+[2026.10.07-08.18.42:346][  0]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Engine/BasicShapes/Cube.Cube being ready before playing
+[2026.10.07-08.18.42:346][  0]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Engine/BasicShapes/Plane.Plane being ready before playing
+[2026.10.07-08.18.42:358][  0]LogWorld: Bringing World /Game/Demo/DemoMap.DemoMap up for play (max tick rate 0) at 2026.10.07-10.18.42
+[2026.10.07-08.18.42:359][  0]LogWorld: Bringing up level for play took: 0.011673
+[2026.10.07-08.18.42:359][  0]LogGameMode: FindPlayerStart: PATHS NOT DEFINED or NO PLAYERSTART with positive rating
+[2026.10.07-08.18.42:360][  0]LogEnhancedInput: Warning: UEnhancedInputLocalPlayerSubsystem for Local Player 'LocalPlayer_0' does not have a valid PlayerInput object. Failed to load user settings.
+[2026.10.07-08.18.42:360][  0]LogModuleManager: InternalLoadLibrary: 'Voice' ('/opt/UnrealEngine/Engine/Binaries/Linux/libUnrealEditor-Voice.so')
+[2026.10.07-08.18.42:371][  0]LogLoad: Took 0.107362 seconds to LoadMap(/Game/Demo/DemoMap)
+[2026.10.07-08.18.42:371][  0]LogGlobalStatus: LoadMap Load map complete /Game/Demo/DemoMap
+[2026.10.07-08.18.42:371][  0]LogModuleManager: InternalLoadLibrary: 'AutomationWorker' ('/opt/UnrealEngine/Engine/Binaries/Linux/libUnrealEditor-AutomationWorker.so')
+[2026.10.07-08.18.42:375][  0]LogRenderer: Forcing update for all mesh draw commands: SkyLight change
+[2026.10.07-08.18.42:375][  0]LogModuleManager: InternalLoadLibrary: 'AutomationController' ('/opt/UnrealEngine/Engine/Binaries/Linux/libUnrealEditor-AutomationController.so')
+[2026.10.07-08.18.42:380][  0]LogModuleManager: InternalLoadLibrary: 'SequenceRecorder' ('/opt/UnrealEngine/Engine/Binaries/Linux/libUnrealEditor-SequenceRecorder.so')
+[2026.10.07-08.18.42:388][  0]LogModuleManager: InternalLoadLibrary: 'SequenceRecorderSections' ('/opt/UnrealEngine/Engine/Binaries/Linux/libUnrealEditor-SequenceRecorderSections.so')
+[2026.10.07-08.18.42:458][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles (PreLoad): 0 .ref files found, 0 referenced binaries
+[2026.10.07-08.18.42:458][  0]LogAssetRegistry: Display: CleanupOrphanedCacheFiles: 0 total binaries, 0 referenced (kept), 0 old-style pre-migration (kept), 0 orphans deleted, 0 orphans locked (kept)
+[2026.10.07-08.18.42:458][  0]LogAssetRegistry: Display: FindShardedCacheFiles: 0 via .ref, 0 via migration fallback, 0 total
+[2026.10.07-08.18.42:458][  0]LogAssetRegistry: Display: AssetDataGatherer spent 0.000s loading caches from ../../../../../user/UnrealProjects/CoolDemo/Intermediate/CachedAssetRegistry.
+[2026.10.07-08.18.42:579][  0]LogPSOHitching: Encountered 50 PSO creation hitches so far (13 graphics, 37 compute). 0 of them were precached.
+[2026.10.07-08.18.42:660][  0]LogPSOHitching: Encountered 100 PSO creation hitches so far (21 graphics, 79 compute). 0 of them were precached.
+[2026.10.07-08.18.42:759][  0]LogPSOHitching: Encountered 150 PSO creation hitches so far (22 graphics, 128 compute). 0 of them were precached.
+[2026.10.07-08.18.43:355][  0]LogAssetRegistry: AssetRegistryGather time 0.7654s: AssetDataDiscovery 0.0000s, AssetDataGather 0.7214s, StoreResults 0.0440s. Wall time 5.1340s.
+	NumCachedDirectories 0. NumUncachedDirectories 1773. NumCachedFiles 0. NumUncachedFiles 8807.
+	BackgroundTickInterruptions 0.
+[2026.10.07-08.18.43:356][  0]LogAssetRegistry: Display: Starting OnFilesLoaded.Broadcast
+[2026.10.07-08.18.43:359][  0]LogAssetRegistry: Display: Completed OnFilesLoaded.Broadcast: 0.003s
+[2026.10.07-08.18.43:359][  0]LogInit: Running DelayedAutoRegister Phase EndOfEngineInit
+[2026.10.07-08.18.43:447][  0]LogInit: Display: Engine is initialized. Leaving FEngineLoop::Init()
+[2026.10.07-08.18.43:447][  0]LogLoad: (Engine Initialization) Total time: 10.99 seconds
+[2026.10.07-08.18.43:482][  0]LogRenderer: Forcing update for all mesh draw commands: SkyLight real-time capture change
+[2026.10.07-08.18.43:482][  0]LogContentStreaming: Texture pool size now 1000 MB
+[2026.10.07-08.18.43:482][  0]LogCsvProfiler: Display: Metadata set : streamingpoolsizemb="1000"
+[2026.10.07-08.18.43:599][  0]LogPSOHitching: Encountered 200 PSO creation hitches so far (44 graphics, 156 compute). 0 of them were precached.
+[2026.10.07-08.18.43:679][  0]LogPython: Display: Running start-up script /opt/UnrealEngine/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... started...
+[2026.10.07-08.18.43:692][  0]LogPython: Display: Running start-up script /opt/UnrealEngine/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... took 13.100 ms
+[2026.10.07-08.18.43:692][  0]LogPython: Display: Running start-up script /opt/UnrealEngine/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... started...
+[2026.10.07-08.18.43:703][  0]LogPython: registering <class 'ControlRigWorkflows.workflow_deformation_rig_preset.provider'>
+
+[2026.10.07-08.18.43:751][  0]LogPython: Display: Running start-up script /opt/UnrealEngine/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... took 59.058 ms (total: 72.158 ms)
+[2026.10.07-08.18.43:752][  0]LogPython: Display: Running start-up script /opt/UnrealEngine/Engine/Plugins/MovieScene/MovieRenderPipeline/Content/Python/init_unreal.py... started...
+[2026.10.07-08.18.43:753][  0]LogPython: Display: Running start-up script /opt/UnrealEngine/Engine/Plugins/MovieScene/MovieRenderPipeline/Content/Python/init_unreal.py... took 1.226 ms (total: 73.385 ms)
+[2026.10.07-08.18.43:761][  1]LogMovieRenderPipeline: Using default Movie Pipeline Executor . See '-MoviePipelineLocalExecutorClass' if you need to override this.
+[2026.10.07-08.18.43:761][  1]LogMovieRenderPipeline: Using default Movie Pipeline . See '-MoviePipelineClass' if you need to override this.
+[2026.10.07-08.18.43:761][  1]LogStreaming: Display: FlushAsyncLoading(189): 1 QueuedPackages, 0 AsyncPackages
+[2026.10.07-08.18.43:801][  1]LogMovieRenderPipeline: Successfully detected and loaded required movie arguments. Rendering will begin once the map is loaded.
+[2026.10.07-08.18.43:801][  1]LogMovieRenderPipeline: NumJobs: 1 ExecutorClass: MoviePipelineInProcessExecutor
+[2026.10.07-08.18.43:801][  1]LogMovieRenderPipeline: MoviePipelineLinearExecutorBase starting 1 jobs.
+[2026.10.07-08.18.43:801][  1]LogMovieRenderPipeline: MoviePipelineLinearExecutorBase starting job [1/1]
+[2026.10.07-08.18.43:805][  1]LogMovieRenderPipeline: About to load target map /Game/Demo/DemoMap
+[2026.10.07-08.18.43:807][  2]LogGlobalStatus: Browse Started Browse: "/Game/Demo/DemoMap??game=/Script/MovieRenderPipelineCore.MoviePipelineGameMode"
+[2026.10.07-08.18.43:807][  2]LogNet: Browse: /Game/Demo/DemoMap??game=/Script/MovieRenderPipelineCore.MoviePipelineGameMode
+[2026.10.07-08.18.43:807][  2]LogLoad: LoadMap: /Game/Demo/DemoMap??game=/Script/MovieRenderPipelineCore.MoviePipelineGameMode
+[2026.10.07-08.18.43:807][  2]LogWorld: BeginTearingDown for /Game/Demo/DemoMap
+[2026.10.07-08.18.43:808][  2]LogWorld: UWorld::CleanupWorld for DemoMap, bSessionEnded=true, bCleanupResources=true
+[2026.10.07-08.18.43:810][  2]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.10.07-08.18.43:876][  2]LogAudio: Display: Audio Device unregistered from world 'DemoMap'.
+[2026.10.07-08.18.43:882][  2]LogRenderer: Forcing update for all mesh draw commands: SkyLight change
+[2026.10.07-08.18.43:882][  2]LogRenderer: Forcing update for all mesh draw commands: SkyLight real-time capture change
+[2026.10.07-08.18.43:883][  2]LogUObjectHash: Compacting FUObjectHashTables data took   0.52ms
+[2026.10.07-08.18.43:884][  2]LogStreaming: Display: FlushAsyncLoading(191): 1 QueuedPackages, 0 AsyncPackages
+[2026.10.07-08.18.43:904][  2]LogAudio: Display: Audio Device (ID: 1) registered with world 'DemoMap'.
+[2026.10.07-08.18.43:904][  2]LogChaosDD: Creating Chaos Debug Draw Scene for world DemoMap
+[2026.10.07-08.18.43:907][  2]LogLoad: Game class is 'MoviePipelineGameMode'
+[2026.10.07-08.18.43:907][  2]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Engine/BasicShapes/Cube.Cube being ready before playing
+[2026.10.07-08.18.43:907][  2]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Engine/BasicShapes/Plane.Plane being ready before playing
+[2026.10.07-08.18.43:918][  2]LogWorld: Bringing World /Game/Demo/DemoMap.DemoMap up for play (max tick rate 0) at 2026.10.07-10.18.43
+[2026.10.07-08.18.43:919][  2]LogWorld: Bringing up level for play took: 0.011355
+[2026.10.07-08.18.43:919][  2]LogGameMode: FindPlayerStart: PATHS NOT DEFINED or NO PLAYERSTART with positive rating
+[2026.10.07-08.18.43:919][  2]LogEnhancedInput: Warning: UEnhancedInputLocalPlayerSubsystem for Local Player 'LocalPlayer_0' does not have a valid PlayerInput object. Failed to load user settings.
+[2026.10.07-08.18.43:920][  2]LogMovieRenderPipeline: Finished map load DemoMap
+[2026.10.07-08.18.43:920][  2]LogMovieRenderPipeline: Zero Initial Delay, initializing...
+[2026.10.07-08.18.43:920][  2]LogMovieRenderPipeline: [2] Initializing overall Movie Pipeline
+[2026.10.07-08.18.43:940][  2]LogMovieRenderPipeline: Applying Game Override quality settings and cvars.
+[2026.10.07-08.18.43:940][  2]LogConfig: Applying CVar settings from Section [ViewDistanceQuality@Cine] File [Scalability]
+[2026.10.07-08.18.43:940][  2]LogConfig: Set CVar [[r.ViewDistanceScale:10.0]]
+[2026.10.07-08.18.43:940][  2]LogConfig: Applying CVar settings from Section [AntiAliasingQuality@Cine] File [Scalability]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.FXAA.Quality:5]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.TSR.History.R11G11B10:0]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Applying CVar settings from Section [ShadowQuality@Cine] File [Scalability]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.Shadow.MaxResolution:4096]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.Shadow.MaxCSMResolution:4096]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.Shadow.RadiusThreshold:0]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.VolumetricFog.GridPixelSize:4]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.VolumetricFog.HistoryMissSupersampleCount:16]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.Shadow.Virtual.MaxPhysicalPages:8192]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.Shadow.Virtual.ResolutionLodBiasLocalMoving:0.0]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.Shadow.Virtual.SMRT.RayCountDirectional:16]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.Shadow.Virtual.SMRT.SamplesPerRayDirectional:8]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.Shadow.Virtual.SMRT.RayCountLocal:16]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.Shadow.Virtual.SMRT.SamplesPerRayLocal:8]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.MegaLights.DownsampleMode:0]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.MegaLights.FrontLayerTranslucency.SpecularOnly:0]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.MegaLights.FrontLayerTranslucency.SoftShadows:1]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Set CVar [[r.MegaLights.FrontLayerTranslucency.TexturedRectLights:1]]
+[2026.10.07-08.18.43:941][  2]LogConfig: Applying CVar settings from Section [GlobalIlluminationQuality@Cine] File [Scalability]
+[2026.10.07-08.18.43:951][  2]LogConfig: Set CVar [[r.Lumen.ScreenProbeGather.RadianceCache.NumProbesToTraceBudget:350]]
+[2026.10.07-08.18.43:951][  2]LogConfig: Set CVar [[r.Lumen.ScreenProbeGather.DownsampleFactor:8]]
+[2026.10.07-08.18.43:951][  2]LogConfig: Set CVar [[r.Lumen.ScreenProbeGather.NumAdaptiveProbes:4]]
+[2026.10.07-08.18.43:951][  2]LogConfig: Set CVar [[r.Lumen.ScreenProbeGather.TracingOctahedronResolution:16]]
+[2026.10.07-08.18.43:951][  2]LogConfig: Set CVar [[r.Lumen.ScreenProbeGather.FullResolutionJitterWidth:.5]]
+[2026.10.07-08.18.43:951][  2]LogConfig: Set CVar [[r.Lumen.TranslucencyVolume.TracingOctahedronResolution:4]]
+[2026.10.07-08.18.43:951][  2]LogConfig: Set CVar [[r.Lumen.TranslucencyVolume.RadianceCache.ProbeResolution:16]]
+[2026.10.07-08.18.43:951][  2]LogConfig: Set CVar [[r.Lumen.TranslucencyVolume.RadianceCache.NumProbesToTraceBudget:350]]
+[2026.10.07-08.18.43:951][  2]LogConfig: Applying CVar settings from Section [ReflectionQuality@Cine] File [Scalability]
+[2026.10.07-08.18.43:951][  2]LogConfig: Set CVar [[r.SSR.Quality:4]]
+[2026.10.07-08.18.43:951][  2]LogConfig: Set CVar [[r.Lumen.TranslucencyReflections.FrontLayer.Enable:1]]
+[2026.10.07-08.18.43:951][  2]LogConfig: Applying CVar settings from Section [PostProcessQuality@Cine] File [Scalability]
+[2026.10.07-08.18.43:951][  2]LogConfig: Set CVar [[r.GTAO.Numangles:4]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.DepthOfFieldQuality:4]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.RenderTargetPoolMin:1000]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.LensFlareQuality:3]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.Bloom.ScreenPercentage:100]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.LUT.Shaper:1]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.LUT.Size:64]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.DOF.Gather.ResolutionDivisor:1         ; do the gathering at full resolution]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.DOF.Gather.EnableBokehSettings:1       ; bokeh simulation when gathering]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.DOF.Gather.RingCount:5                 ; high number of samples when gathering]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.DOF.Scatter.MaxSpriteRatio:0.25        ; only a maximum of 10% of scattered bokeh]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.DOF.Recombine.Quality:2                ; highest slight out of focus]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.DOF.Recombine.EnableBokehSettings:1    ; bokeh simulation on slight out of focus]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Applying CVar settings from Section [TextureQuality@Cine] File [Scalability]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.Streaming.PoolSize:3000]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Applying CVar settings from Section [EffectsQuality@Cine] File [Scalability]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.SSGI.Quality:4]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.SkyAtmosphere.AerialPerspectiveLUT.FastApplyOnOpaque:0]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.SkyAtmosphere.AerialPerspectiveLUT.SampleCountMaxPerSlice:8]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.SkyAtmosphere.AerialPerspectiveLUT.DepthResolution:32.0]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.SkyAtmosphere.FastSkyLUT:0]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.SkyAtmosphere.FastSkyLUT.SampleCountMax:256.0]]
+[2026.10.07-08.18.43:952][  2]LogConfig: Set CVar [[r.SkyAtmosphere.SampleCountMin:8.0]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.SkyAtmosphere.SampleCountMax:256.0]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.SkyAtmosphere.TransmittanceLUT.SampleCount:30.0]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.SkyAtmosphere.MultiScatteringLUT.SampleCount:20.0]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[fx.Niagara.QualityLevel:4]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.HeterogeneousVolumes.ApplyFogInscattering:1]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.HeterogeneousVolumes.DownsampleFactor:1]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.HeterogeneousVolumes.MaxStepCount:1024]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.HeterogeneousVolumes.Shadows.Type:0]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.HeterogeneousVolumes.Shadows.Resolution:1024]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.HeterogeneousVolumes.Shadows.MaxSampleCount:16]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.HeterogeneousVolumes.Shadows.Precision:1]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.HeterogeneousVolumes.UseExistenceMask:1]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.Translucency.HeterogeneousVolumes.Type:0]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Applying CVar settings from Section [FoliageQuality@Cine] File [Scalability]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[pcg.Quality:4]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Applying CVar settings from Section [ShadingQuality@Cine] File [Scalability]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.HairStrands.SkyLighting.IntegrationType:1]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.HairStrands.SkyAO.SampleCount:8]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Set CVar [[r.HairStrands.Visibility.MSAA.SamplePerPixel:8]]
+[2026.10.07-08.18.43:953][  2]LogConfig: Applying CVar settings from Section [LandscapeQuality@Cine] File [Scalability]
+[2026.10.07-08.18.43:959][  2]LogRenderer: Forcing update for all mesh draw commands: SkyLight change
+[2026.10.07-08.18.43:966][  2]LogConsoleManager: Display: Trying to Replace Cvar=r.Water.WaterInfo.RenderMethod Set By Constructor Value implicitly by calling SetWithCurrentPriority or ReplaceCurrentPriorityAndTag.
+This is not allowed, possible solutions:
+1. Use SetWithCurrentPriority or ReplaceCurrentPriorityAndTag with explicit MinPriority and MaxPriority values, with MinPriority >= ECVF_SetByScalability.
+2. Use explicit Set, Cvar->Set(<Value>, <SetByPriority>)
+[2026.10.07-08.18.43:967][  2]LogMovieRenderPipeline: Generated new ShotInfo for Inner: ShotCam Outer: no shot (No existing shot found in the job).
+[2026.10.07-08.18.43:967][  2]LogMovieRenderPipeline: Registering range: [0,120000) (InnerName: ShotCam OuterName: no shot)
+[2026.10.07-08.18.44:051][  2]LogCore: Warning: Unable to statfs('/home/user/StudioProjects/unreal/CoolDemo/Render_preview/DemoSeq.0000.{ext}'): errno=2 (No such file or directory)
+[2026.10.07-08.18.44:051][  2]LogLoad: Took 0.243682 seconds to LoadMap(/Game/Demo/DemoMap)
+[2026.10.07-08.18.44:051][  2]LogGlobalStatus: LoadMap Load map complete /Game/Demo/DemoMap
+[2026.10.07-08.18.44:057][  2]LogContentStreaming: Texture pool size now 3000 MB
+[2026.10.07-08.18.44:057][  2]LogCsvProfiler: Display: Metadata set : streamingpoolsizemb="3000"
+[2026.10.07-08.18.44:087][  2]LogSlate: Display: Font face '../../Content/Slate/Fonts/Roboto-Bold.ttf' subface index 0 successfully added to font face map in Game thread.
+[2026.10.07-08.18.44:103][  3]LogMovieRenderPipeline: Expanding Shot 1/1 (Shot: no shot Camera: ShotCam)
+[2026.10.07-08.18.44:103][  3]LogMovieRenderPipeline: [3] Initializing Camera Cut [1/1] in [no shot] ShotCam.
+[2026.10.07-08.18.44:103][  3]LogMovieRenderPipeline: [3] Initialization set state to WarmingUp due to having 60 warm up frames.
+[2026.10.07-08.18.44:112][  3]LogStreaming: Display: FlushAsyncLoading(195): 1 QueuedPackages, 0 AsyncPackages
+[2026.10.07-08.18.44:121][  3]LogMovieRenderPipeline: Finished setting up rendering for shot. Shot has 1 Passes. Total resolution: (960x540) Individual tile resolution: (960x540). Tile count: (1x1)
+[2026.10.07-08.18.44:121][  3]LogMovieRenderPipeline: [3] Finished initializing Camera Cut [1/1] in [no shot] ShotCam.
+Signal 11 caught.
+Malloc Size=262146 LargeMemoryPoolOffset=262162 
+Malloc Size=262146 LargeMemoryPoolOffset=524338 
+CommonUnixCrashHandler: Signal=11
+[2026.10.07-08.18.44:210][  3]LogCore: === Critical error: ===
+Unhandled Exception: SIGSEGV: invalid attempt to read memory at address 0x0000070041c00000
+
+[2026.10.07-08.18.44:210][  3]LogCore: Fatal error!
+
+0x00007f126f4face5 libUnrealEditor-Engine.so!APlayerCameraManager::UpdateViewTarget(FTViewTarget&, float) [/mnt/horde/++UE5/Sync/Engine/Source/./Runtime/Engine/Private/PlayerCameraManager.cpp:389]
+0x00007f126f4fd122 libUnrealEditor-Engine.so!APlayerCameraManager::DoUpdateCamera(float) [/mnt/horde/++UE5/Sync/Engine/Source/./Runtime/Engine/Private/PlayerCameraManager.cpp:903]
+0x00007f126f4fc9ec libUnrealEditor-Engine.so!APlayerCameraManager::UpdateCamera(float) [/mnt/horde/++UE5/Sync/Engine/Source/./Runtime/Engine/Private/PlayerCameraManager.cpp:818]
+0x00007f126f52d4c2 libUnrealEditor-Engine.so!APlayerController::UpdateCameraManager(float) [/mnt/horde/++UE5/Sync/Engine/Source/./Runtime/Engine/Private/PlayerController.cpp:6492]
+0x00007f126ecf37b2 libUnrealEditor-Engine.so!UWorld::Tick(ELevelTick, float) [/mnt/horde/++UE5/Sync/Engine/Source/./Runtime/Engine/Private/LevelTick.cpp:1847]
+0x00007f126e8f45ec libUnrealEditor-Engine.so!UGameEngine::Tick(float, bool) [/mnt/horde/++UE5/Sync/Engine/Source/./Runtime/Engine/Private/GameEngine.cpp:1901]
+0x0000000000238e81 UnrealEditor!FEngineLoop::Tick() [/mnt/horde/++UE5/Sync/Engine/Source/./Runtime/Launch/Private/LaunchEngineLoop.cpp:5859]
+0x000000000023d4d7 UnrealEditor!GuardedMain(char16_t const*) [/mnt/horde/++UE5/Sync/Engine/Source/./Runtime/Launch/Private/Launch.cpp:60]
+0x00007f12660c4fbd libUnrealEditor-UnixCommonStartup.so!CommonUnixMain(int, char**, int (*)(char16_t const*), void (*)()) [/mnt/horde/++UE5/Sync/Engine/Source/./Runtime/Unix/UnixCommonStartup/Private/UnixCommonStartup.cpp:324]
+0x00007f1265c27cce libc.so.6!UnknownFunction(0x27ccd)
+0x00007f1265c27e0b libc.so.6!__libc_start_main(+0x8a)
+0x0000000000234dfa UnrealEditor!_start(+0x29)
+
+[2026.10.07-08.18.44:252][  3]LogExit: Executing StaticShutdownAfterError
+Malloc Size=122858 LargeMemoryPoolOffset=647226 
+Malloc Size=103766 LargeMemoryPoolOffset=751014 
+Malloc Size=253218 LargeMemoryPoolOffset=1004258 
+LogInit: Running DelayedAutoRegister Phase StartOfEnginePreInit
+LogInit: Running DelayedAutoRegister Phase FileSystemReady
+LogInit: Running DelayedAutoRegister Phase TaskGraphSystemReady
+LogInit: Running DelayedAutoRegister Phase StatSystemReady
+LogICUInternationalization: ICU TimeZone Detection - Raw Offset: +1:00, Platform Override: ''
+LogConfig: No local boot hotfix file found at: [/home/user/.config/Epic/CrashReportClient/Saved/PersistentDownloadDir/HotfixForNextBoot.txt]
+LogInit: Running DelayedAutoRegister Phase IniSystemReady
+LogInit: Running DelayedAutoRegister Phase EarliestPossiblePluginsLoaded
+LogInit: ExecutableName: CrashReportClientEditor
+LogInit: Build: ++UE5+Release-5.8-CL-58210709
+LogInit: Platform=Linux
+LogInit: MachineId=eb0b957ebd144834a193490fae076321-000003e8
+LogInit: DeviceId=
+LogInit: Engine Version: 5.8.3-58210709+++UE5+Release-5.8
+LogInit: Compatible Engine Version: 5.8.0-55116800+++UE5+Release-5.8
+LogInit: Net CL: 55116800
+LogInit: OS: CachyOS (7.2.9-1-cachyos), CPU: Intel(R) Core(TM) i9-10920X CPU @ 3.50GHz, GPU: NVIDIA GeForce RTX 2060 (NVIDIA UNIX Open Kernel Module for x86_64  615.71.09  Release Build  (notroot@)  Sat Oct  3 23:43:16 UTC 2026)
+LogInit: CPU Model ID: 6557, microcode revision: 5003901
+LogInit: Compiled (64-bit): Sep 17 2026 19:13:32

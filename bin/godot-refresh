@@ -1,0 +1,392 @@
+#!/usr/bin/env python3
+"""godot-refresh: install Godot releases and build version-matched reference bundles for studio projects.
+
+  godot-refresh check                 installed/active vs the latest stable release
+  godot-refresh install [VER|latest]  download + verify engine and export templates, build the reference bundle
+                                      (api, docs, demos, cookbook) and validate it; activate if allowed (below)
+  godot-refresh activate VER          make VER the default engine (~/.local/bin/godot) and bundle (ref-current)
+  godot-refresh auto                  what the weekly timer runs: install latest; auto-activate only a validated
+                                      PATCH release of the active minor (4.7.2 -> 4.7.3); a new minor/major is
+                                      installed + validated and reported, never switched silently
+  godot-refresh project DIR [VER]     refresh DIR/godot-ref from the bundle matching the project's minor version
+  godot-refresh rebuild [VER]         rebuild the reference bundle of an installed version (after cookbook edits)
+
+Layout under STUDIO_GODOT_HOME (studio.env): <ver>/ engine, ref-<ver>/{api,docs,demos,cookbook,INDEX.md}, ref-current -> ref-<ver>,
+src/ git caches, state.json, refresh.log. Projects pin their engine by minor version (project.godot features):
+the studio broker runs each project with the newest installed engine of that minor.
+"""
+import datetime
+import hashlib
+import json
+import os
+import pathlib
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import urllib.request
+import zipfile
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+from studio_config import path as cfg_path  # noqa: E402
+
+ROOT = cfg_path("STUDIO_GODOT_HOME")
+STUDIO = pathlib.Path(__file__).resolve().parents[1]
+TEMPLATES = pathlib.Path.home() / ".local/share/godot/export_templates"
+LINK = pathlib.Path.home() / ".local/bin/godot"
+GH = "https://api.github.com/repos/godotengine"
+STATE = ROOT / "state.json"
+LOG = ROOT / "refresh.log"
+
+
+def log(msg):
+    line = f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S} {msg}"
+    print(line, flush=True)
+    ROOT.mkdir(parents=True, exist_ok=True)
+    with open(LOG, "a") as f:
+        f.write(line + "\n")
+
+
+def notify(msg):
+    log(msg)
+    if shutil.which("notify-send"):
+        subprocess.run(["notify-send", "Godot refresh", msg], check=False)
+
+
+def sh(cmd, **kw):
+    return subprocess.run(cmd, check=True, text=True, capture_output=True, **kw).stdout
+
+
+def gh(path):
+    req = urllib.request.Request(f"{GH}/{path}", headers={"Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.load(r)
+
+
+def vkey(v):
+    return tuple(int(x) for x in re.findall(r"\d+", v))
+
+
+def minor(v):
+    return ".".join(v.split(".")[:2])
+
+
+def state():
+    return json.loads(STATE.read_text()) if STATE.exists() else {"installed": {}, "active": None}
+
+
+def save_state(s):
+    STATE.write_text(json.dumps(s, indent=1))
+
+
+def latest_stable():
+    rels = [r for r in gh("godot/releases?per_page=30") if r["tag_name"].endswith("-stable") and not r["prerelease"]]
+    rels = [r for r in rels if vkey(r["tag_name"])[0] >= 4]
+    return max(rels, key=lambda r: vkey(r["tag_name"]))["tag_name"].removesuffix("-stable")
+
+
+def engine_bin(ver):
+    return ROOT / ver / f"Godot_v{ver}-stable_linux.x86_64"
+
+
+# ------------------------------------------------------------------ engine + templates
+def download(url, dst):
+    if dst.exists():
+        return
+    tmp = dst.with_suffix(dst.suffix + ".part")
+    subprocess.run(["curl", "-fsSL", "--retry", "5", "-C", "-", "-o", str(tmp), url], check=True)
+    tmp.rename(dst)
+
+
+def install_engine(ver):
+    if engine_bin(ver).exists() and (TEMPLATES / f"{ver}.stable/version.txt").exists():
+        log(f"engine {ver} already installed")
+        return
+    dl = ROOT / f"dl-{ver}"
+    dl.mkdir(parents=True, exist_ok=True)
+    base = f"https://github.com/godotengine/godot/releases/download/{ver}-stable"
+    names = ["SHA512-SUMS.txt", f"Godot_v{ver}-stable_linux.x86_64.zip", f"Godot_v{ver}-stable_export_templates.tpz"]
+    for n in names:
+        log(f"download {n}")
+        download(f"{base}/{n}", dl / n)
+    sums = dict(reversed(l.split()) for l in (dl / names[0]).read_text().splitlines() if l.strip())
+    for n in names[1:]:
+        h = hashlib.sha512((dl / n).read_bytes()).hexdigest()
+        if sums.get(n) != h:
+            raise SystemExit(f"checksum mismatch for {n}")
+    log("checksums OK")
+    (ROOT / ver).mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(dl / names[1]) as z:
+        z.extractall(ROOT / ver)
+    engine_bin(ver).chmod(0o755)
+    tdir = TEMPLATES / f"{ver}.stable"
+    tdir.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(dl / names[2]) as z:
+        for m in z.infolist():
+            if m.is_dir() or not m.filename.startswith("templates/"):
+                continue
+            out = tdir / m.filename.removeprefix("templates/")
+            with z.open(m) as src, open(out, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+    log(f"installed engine {ver} + export templates")
+
+
+# ------------------------------------------------------------------ reference bundle
+def git_cache(name, url, ref, sparse=None):
+    """Shallow checkout of ref (branch or tag) in ROOT/src/<name>-<ref>."""
+    d = ROOT / "src" / f"{name}-{ref}"
+    if d.exists():
+        return d
+    d.parent.mkdir(parents=True, exist_ok=True)
+    cmd = ["git", "clone", "-q", "--depth", "1", "--branch", ref]
+    if sparse:
+        cmd += ["--filter=blob:none", "--sparse"]
+    subprocess.run(cmd + [url, str(d)], check=True)
+    if sparse:
+        subprocess.run(["git", "-C", str(d), "sparse-checkout", "set", *sparse], check=True)
+    return d
+
+
+def build_api(ver, out):
+    src = git_cache("godot", "https://github.com/godotengine/godot", f"{ver}-stable", sparse=["doc/classes", "modules"])
+    dirs = [str(src / "doc/classes")] + sorted(str(p) for p in src.glob("modules/*/doc_classes"))
+    subprocess.run([str(STUDIO / "bin/godot-api-gen"), str(out), *dirs], check=True)
+
+
+def rst_to_text(text):
+    """Docs RST -> plain text for grep: keep prose and GDScript code; drop C# tabs, images, labels, toctrees."""
+    out, skip_indent = [], None
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        ind = len(line) - len(stripped)
+        if skip_indent is not None:
+            if stripped and ind <= skip_indent:
+                skip_indent = None
+            else:
+                continue
+        if re.match(r"\.\. (code-tab|tab):: *(csharp|C#|cpp|C\+\+)", stripped, re.I) or \
+                re.match(r"\.\. (image|figure|video|toctree|only|seealso|raw)::", stripped) or \
+                re.match(r"\.\. _[^:]+:$", stripped) or stripped.startswith(".. |"):
+            skip_indent = ind
+            continue
+        if re.match(r"\.\. (tabs|code-tab|tab|code-block|note|warning|tip|important|caution|danger|hint)::", stripped):
+            kind = re.match(r"\.\. ([\w-]+)::\s*(.*)", stripped)
+            label = {"note": "Note:", "warning": "Warning:", "tip": "Tip:", "important": "Important:",
+                     "caution": "Caution:", "danger": "Danger:", "hint": "Hint:"}.get(kind.group(1))
+            if label:
+                out.append(" " * ind + (label + " " + kind.group(2)).rstrip())  # inline text after "::"
+            continue
+        if re.match(r":(\w+):.*$", stripped) and ind > 0 and not out[-1:] == [""] and len(stripped) < 60:
+            continue  # directive options like :linenos:
+        line = re.sub(r":(?:ref|doc):`([^`<]*?)\s*<[^>]+>`", r"\1", line)
+        line = re.sub(r":(?:ref|doc|class|meth|member|signal|enum|const|abbr|kbd|menu|file|code|annotation):`~?([^`]+)`",
+                      r"\1", line)
+        line = re.sub(r"`([^`<]+?) <[^>]+>`__?", r"\1", line)
+        line = line.replace("``", "`")
+        out.append(line)
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip() + "\n"
+
+
+def build_docs(ver, out):
+    branch = minor(ver)
+    try:
+        src = git_cache("godot-docs", "https://github.com/godotengine/godot-docs", branch)
+    except subprocess.CalledProcessError:
+        src = git_cache("godot-docs", "https://github.com/godotengine/godot-docs", "stable")
+    index = []
+    for sub in ("getting_started", "tutorials"):
+        for f in sorted((src / sub).rglob("*.rst")):
+            rel = f.relative_to(src).with_suffix(".txt")
+            if {"c_sharp", "cpp", "gdextension"} & set(rel.parts):
+                continue  # studio projects use GDScript only
+            text = rst_to_text(f.read_text(errors="replace"))
+            dst = out / rel
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_text(text)
+            title = next((l.strip() for l in text.splitlines() if l.strip() and not set(l.strip()) <= set("=-~^*#")), "")
+            index.append(f"{rel}: {title}")
+    (out / "INDEX.txt").write_text(f"Godot {branch} manual (getting_started + tutorials; GDScript only, C# removed). "
+                                   "One line per page: path: title. grep -rn 'term' godot-ref/docs\n\n"
+                                   + "\n".join(index) + "\n")
+    log(f"docs: {len(index)} pages from godot-docs {src.name}")
+
+
+def build_demos(ver, out):
+    tags = [t["name"] for t in gh("godot-demo-projects/tags?per_page=100")]
+    mine = sorted((t for t in tags if t.startswith(minor(ver) + "-")), reverse=True)
+    ref = mine[0] if mine else "master"
+    src = git_cache("godot-demo-projects", "https://github.com/godotengine/godot-demo-projects", ref)
+    keep = {".gd", ".gdshader", ".tscn", ".tres", ".cfg", ".md", ".godot"}
+    index = []
+    for proj in sorted(src.rglob("project.godot")):
+        pdir = proj.parent
+        if any(pdir.rglob("*.csproj")) or "mono" in pdir.parts:
+            continue
+        rel = pdir.relative_to(src)
+        n = 0
+        for f in pdir.rglob("*"):
+            if f.is_file() and (f.suffix in keep or f.name == "project.godot") and ".godot" not in f.relative_to(pdir).parts[:-1]:
+                dst = out / rel / f.relative_to(pdir)
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, dst)
+                n += 1
+        readme = pdir / "README.md"
+        desc = ""
+        if readme.exists():
+            desc = next((l.strip("# ").strip() for l in readme.read_text(errors="replace").splitlines()[1:]
+                         if l.strip() and not l.startswith(("#", "!", "Language", "Renderer", "Check out"))), "")
+        index.append(f"{rel}/: {desc[:150]}")
+    (out / "INDEX.txt").write_text(f"Official Godot demo projects ({src.name}; text files only: scripts, scenes, "
+                                   "resources; no images/audio). One line per demo: path: what it shows.\n"
+                                   "These are complete, working Godot 4 examples: copy patterns from them.\n\n"
+                                   + "\n".join(index) + "\n")
+    log(f"demos: {len(index)} projects from {ref}")
+
+
+def build_bundle(ver):
+    dst = ROOT / f"ref-{ver}"
+    tmp = ROOT / f".ref-{ver}.tmp"
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir(parents=True)
+    build_api(ver, tmp / "api")
+    build_docs(ver, tmp / "docs")
+    build_demos(ver, tmp / "demos")
+    shutil.copytree(STUDIO / "godot/cookbook", tmp / "cookbook")
+    (tmp / "INDEX.md").write_text(f"""# Godot {ver} reference (generated by godot-refresh, {datetime.date.today()})
+Search these with grep instead of relying on memory (your memory is full of Godot 3 code):
+- api/       exact class reference of this engine: INDEX.txt (one line per class), <Class>.txt (signatures)
+- cookbook/  verified Godot {minor(ver)} recipes (each compiles and passes its self-test): README.md lists them
+- demos/     the official demo projects (scripts + scenes): INDEX.txt lists them
+- docs/      the official manual (getting_started, tutorials), GDScript only: INDEX.txt lists the pages
+Examples: grep -n "tween_property" api/Tween.txt ; grep -rln "CharacterBody2D" demos | head ;
+grep -rn "Movie Maker" docs | head
+""")
+    (tmp / ".gdignore").touch()
+    (tmp / "VERSION").write_text(ver + "\n")
+    shutil.rmtree(dst, ignore_errors=True)
+    tmp.rename(dst)
+    log(f"bundle ref-{ver}: " + ", ".join(f"{d}={sum(f.stat().st_size for f in (dst / d).rglob('*') if f.is_file()) // 1024} KB"
+                                       for d in ("api", "docs", "demos", "cookbook")))
+    return dst
+
+
+# ------------------------------------------------------------------ validation
+def validate(ver):
+    """Cookbook compiles and self-tests pass with this engine; a template project checks, exports and runs."""
+    godot = str(engine_bin(ver))
+    env = {**os.environ, "GODOT_BIN": godot}
+    ok = True
+    r = subprocess.run([str(STUDIO / "bin/godot-cookbook-test"), "--godot", godot, "--ref", str(ROOT / f"ref-{ver}")],
+                       capture_output=True, text=True, env=env)
+    log("cookbook: " + (r.stdout.strip().splitlines() or ["no output"])[-1])
+    ok &= r.returncode == 0
+    with tempfile.TemporaryDirectory(dir=ROOT) as td:
+        ws = pathlib.Path(td) / "Probe"
+        shutil.copytree(STUDIO / "template/godot-base", ws)
+        shutil.copytree(ROOT / f"ref-{ver}", ws / "godot-ref")
+        r = subprocess.run([str(STUDIO / "bin/godot-check-all")], cwd=ws, capture_output=True, text=True, env=env)
+        log("template check: " + (r.stdout.strip().splitlines() or [""])[-1])
+        ok &= r.returncode == 0
+        (ws / "build/linux").mkdir(parents=True)
+        r = subprocess.run([godot, "--headless", "--path", str(ws), "--export-release", "Linux",
+                            str(ws / "build/linux/StudioGodot.x86_64")], capture_output=True, text=True, timeout=600)
+        exe = ws / "build/linux/StudioGodot.x86_64"
+        ok &= exe.exists()
+        if exe.exists():
+            r = subprocess.run([str(exe), "--headless", "--", "--autopilot"], capture_output=True, text=True, timeout=120)
+            fin = "GAME_FINISH" in r.stdout
+            log(f"template export run: {'GAME_FINISH ok' if fin else 'no GAME_FINISH'}")
+            ok &= fin
+        else:
+            log("template export failed: " + r.stdout[-300:])
+    return ok
+
+
+# ------------------------------------------------------------------ commands
+def activate(ver):
+    s = state()
+    if ver not in s["installed"] or not s["installed"][ver].get("validated"):
+        raise SystemExit(f"{ver} is not installed and validated")
+    LINK.parent.mkdir(parents=True, exist_ok=True)
+    tmp = LINK.with_name(".godot.tmp")
+    tmp.unlink(missing_ok=True)
+    tmp.symlink_to(engine_bin(ver))
+    tmp.rename(LINK)
+    cur = ROOT / "ref-current"
+    tmpc = ROOT / ".ref-current.tmp"
+    tmpc.unlink(missing_ok=True)
+    tmpc.symlink_to(f"ref-{ver}")
+    tmpc.rename(cur)
+    s["active"] = ver
+    save_state(s)
+    notify(f"Godot {ver} is now the default engine (new projects get ref-{ver}).")
+
+
+def install(ver, may_activate):
+    s = state()
+    ver = latest_stable() if ver in (None, "latest") else ver
+    install_engine(ver)
+    build_bundle(ver)
+    ok = validate(ver)
+    s["installed"][ver] = {"date": str(datetime.date.today()), "validated": ok}
+    save_state(s)
+    if not ok:
+        notify(f"Godot {ver} installed but validation FAILED: not activated (see {LOG}).")
+        return ver
+    active = s.get("active")
+    if may_activate == "always" or active is None or \
+            (may_activate == "patch" and minor(ver) == minor(active) and vkey(ver) > vkey(active)):
+        activate(ver)
+    elif active != ver:
+        notify(f"Godot {ver} installed and validated; still using {active} by default. "
+               f"Switch with: godot-refresh activate {ver}")
+    return ver
+
+
+def refresh_project(d, ver=None):
+    d = pathlib.Path(d).resolve()
+    pg = (d / "project.godot").read_text()
+    m = re.search(r'config/features=PackedStringArray\("(\d+\.\d+)"', pg)
+    want = minor(ver) if ver else (m.group(1) if m else None)
+    s = state()
+    cands = sorted((v for v in s["installed"] if s["installed"][v].get("validated") and (want is None or minor(v) == want)),
+                   key=vkey)
+    if not cands:
+        raise SystemExit(f"no validated Godot {want or ''} bundle installed")
+    src = ROOT / f"ref-{cands[-1]}"
+    shutil.rmtree(d / "godot-ref", ignore_errors=True)
+    shutil.copytree(src, d / "godot-ref")
+    log(f"{d.name}: godot-ref <- ref-{cands[-1]}")
+
+
+def main():
+    a = sys.argv[1:]
+    cmd = a[0] if a else "check"
+    if cmd == "check":
+        s = state()
+        print(f"active: {s.get('active')}  installed: {sorted(s['installed'], key=vkey)}  latest stable: {latest_stable()}")
+    elif cmd == "install":
+        install(a[1] if len(a) > 1 else "latest", "always" if "--activate" in a else "patch")
+    elif cmd == "auto":
+        try:
+            install("latest", "patch")
+        except Exception as e:  # noqa: BLE001 - the timer must report, not crash silently
+            notify(f"Godot refresh failed: {e}")
+            raise
+    elif cmd == "activate":
+        activate(a[1])
+    elif cmd == "rebuild":
+        ver = a[1] if len(a) > 1 else state()["active"]
+        build_bundle(ver)
+        s = state()
+        s["installed"].setdefault(ver, {})["validated"] = validate(ver)
+        save_state(s)
+    elif cmd == "project":
+        refresh_project(a[1], a[2] if len(a) > 2 else None)
+    else:
+        print(__doc__)
+
+
+if __name__ == "__main__":
+    main()

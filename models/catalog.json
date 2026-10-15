@@ -1,0 +1,96 @@
+{
+  "_doc": "Local models the studio knows. models/gen-config.py turns a hardware profile (models/profiles/*.json) plus this catalog into the llama-swap config, the download list and the OpenCode config. 'slot': big = the worker GPU, small = a second small GPU. 'args': llama-server flags after the common ones (context and sampling); 'n_cpu_moe': MoE expert layers kept in system RAM (VRAM-dependent: profiles may override). 'tested' summarises our measurements (docs/models.md has the details).",
+  "servers": {
+    "stock": "${env.HOME}/opt/llama.cpp/build/bin/llama-server",
+    "prism": "${env.HOME}/opt/llama.cpp-prism/build/bin/llama-server"
+  },
+  "common": "--host 127.0.0.1 --port ${PORT} -ngl 99 -fa on --jinja -np 1 --no-webui",
+  "models": {
+    "bonsai2-27b": {
+      "name": "Ternary Bonsai 2 27B (Qwen3.8-27B, PTQ1_0)",
+      "slot": "big", "server": "prism", "vram_gb": 12, "ctx": 196608, "vision": true,
+      "files": [["prism-ml/Ternary-Bonsai-2-27B-gguf", "Ternary-Bonsai-2-27B-PTQ1_0.gguf"],
+                ["prism-ml/Ternary-Bonsai-2-27B-gguf", "Ternary-Bonsai-2-27B-mmproj-Q8_0.gguf"]],
+      "model": "Ternary-Bonsai-2-27B-PTQ1_0.gguf", "mmproj": "Ternary-Bonsai-2-27B-mmproj-Q8_0.gguf",
+      "args": "-c 196608 -ctk q8_0 -ctv q8_0 --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.05",
+      "chat_template": "bonsai2-27b.jinja", "chat_template_kwargs": {"reasoning_effort": "medium"},
+      "notes": ["min_p 0.05 is required: Bonsai produces gibberish with min_p 0.",
+                "reasoning_effort \"low\" is not supported by the model.",
+                "Needs the PrismML llama.cpp fork (PTQ1_0 ternary format)."],
+      "tested": "capability suite 19/20 (~3x slower than Qwen3.6); Godot suite 4/4, best-looking clip; 188K long-context recall"
+    },
+    "bonsai2-27b-32k": {
+      "name": "Bonsai 2 27B, 32K context (co-residency with a renderer on the same GPU)",
+      "slot": "big", "server": "prism", "vram_gb": 8, "ctx": 32768, "vision": true,
+      "files": [], "model": "Ternary-Bonsai-2-27B-PTQ1_0.gguf", "mmproj": "Ternary-Bonsai-2-27B-mmproj-Q8_0.gguf",
+      "args": "-c 32768 -ctk q8_0 -ctv q8_0 --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.05",
+      "chat_template": "bonsai2-27b.jinja", "chat_template_kwargs": {"reasoning_effort": "medium"},
+      "tested": "GPU co-residency benchmark: UE 1080p render +17% time; too little context for agent work"
+    },
+    "qwen3.6-35b-a3b": {
+      "name": "Qwen3.6-35B-A3B MoE UD-Q4_K_XL, experts partly in RAM",
+      "slot": "big", "server": "stock", "vram_gb": 15, "ctx": 131072, "vision": true, "n_cpu_moe": 20,
+      "files": [["unsloth/Qwen3.6-35B-A3B-GGUF", "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"],
+                ["unsloth/Qwen3.6-35B-A3B-GGUF", "mmproj-F16.gguf", "Qwen3.6-35B-A3B-mmproj-F16.gguf"]],
+      "model": "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf", "mmproj": "Qwen3.6-35B-A3B-mmproj-F16.gguf",
+      "args": "-c 131072 -ctk q8_0 -ctv q8_0 --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0",
+      "notes": ["--n-cpu-moe N keeps the expert weights of the first N layers in system RAM"],
+      "tested": "capability suite 19/20, median 2-7 min per task (default worker); Godot suite 1/4 (behaviour + time)"
+    },
+    "gemma4-26b-a4b": {
+      "name": "Gemma 4 26B-A4B UD-Q4_K_XL + vision",
+      "slot": "big", "server": "stock", "vram_gb": 15, "ctx": 131072, "vision": true, "n_cpu_moe": 13,
+      "files": [["unsloth/gemma-4-26B-A4B-it-GGUF", "gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf"],
+                ["unsloth/gemma-4-26B-A4B-it-GGUF", "mmproj-F16.gguf", "gemma-4-26B-A4B-mmproj-F16.gguf"]],
+      "model": "gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf", "mmproj": "gemma-4-26B-A4B-mmproj-F16.gguf",
+      "args": "-c 131072 -ctk q8_0 -ctv q8_0 --temp 1.0 --top-p 0.95 --top-k 64 --min-p 0.0",
+      "notes": ["17 GB of weights: experts of the first N layers live in system RAM (--n-cpu-moe). At 131K ctx",
+                "N=8 runs out of VRAM on 16 GB; N=12 loads at 15.4 of 16 GB; 13 keeps some headroom."],
+      "tested": "Godot suite 4/4 in 32 min (fastest, fewest turns): Godot worker (provisional)"
+    },
+    "qwen3.8-27b-q3": {
+      "name": "Qwen3.8-27B UD-Q3_K_XL (dense; only 49K context fits in 16 GB)",
+      "slot": "big", "server": "stock", "vram_gb": 15, "ctx": 49152, "vision": true,
+      "files": [["unsloth/Qwen3.8-27B-GGUF", "Qwen3.8-27B-UD-Q3_K_XL.gguf"],
+                ["unsloth/Qwen3.8-27B-GGUF", "mmproj-F16.gguf", "Qwen3.8-27B-mmproj-F16.gguf"]],
+      "model": "Qwen3.8-27B-UD-Q3_K_XL.gguf", "mmproj": "Qwen3.8-27B-mmproj-F16.gguf",
+      "args": "-c 49152 -ctk q8_0 -ctv q8_0 --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.0",
+      "chat_template": "bonsai2-27b.jinja",
+      "notes": ["The GGUF's own chat template rejects Claude Code's 'developer' role (HTTP 500): use Bonsai's (same model family)."],
+      "tested": "Godot suite 1/4, limited by the 49K context (Claude Code's system prompt + task overflow it)"
+    },
+    "mellum2.1-12b": {
+      "name": "Mellum2.1 12B-A2.5B Thinking Q6_K (fully in VRAM)",
+      "slot": "big", "server": "stock", "vram_gb": 12, "ctx": 131072, "vision": false,
+      "files": [["JetBrains/Mellum2.1-12B-A2.5B-Thinking-GGUF", "Mellum2.1-12B-A2.5B-Thinking-Q6_K.gguf"]],
+      "model": "Mellum2.1-12B-A2.5B-Thinking-Q6_K.gguf",
+      "args": "-c 131072 -ctk q8_0 -ctv q8_0 --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0",
+      "tested": "Godot suite 0/4: loses the task inside Claude Code's long system prompt; not a worker (fast: 245 tok/s)"
+    },
+    "spark-4b": {
+      "name": "Spark-X2.5-4B Q8_0 (small/fast slot)",
+      "slot": "small", "server": "stock", "vram_gb": 5, "ctx": 32768, "vision": false,
+      "files": [["XHToken/Spark-X2.5-4B-GGUF", "Spark-X2.5-4B-Q8_0.gguf"]],
+      "model": "Spark-X2.5-4B-Q8_0.gguf",
+      "args": "-c 32768", "chat_template_kwargs": {"enable_thinking": false},
+      "tested": "log triage 0.75 in ~20 s; never for multi-step tool work"
+    },
+    "qwen3.5-4b": {
+      "name": "Qwen3.5-4B UD-Q6_K_XL + vision (small GPU)",
+      "slot": "small", "server": "stock", "vram_gb": 5, "ctx": 32768, "vision": true,
+      "files": [["unsloth/Qwen3.5-4B-GGUF", "Qwen3.5-4B-UD-Q6_K_XL.gguf"],
+                ["unsloth/Qwen3.5-4B-GGUF", "mmproj-F16.gguf", "Qwen3.5-4B-mmproj-F16.gguf"]],
+      "model": "Qwen3.5-4B-UD-Q6_K_XL.gguf", "mmproj": "Qwen3.5-4B-mmproj-F16.gguf", "mmproj_offload": false,
+      "args": "-c 32768 -ctk q8_0 -ctv q8_0 --temp 0.7 --top-p 0.8 --top-k 20",
+      "tested": "capability-suite candidate for the small GPU (vision on CPU: only ~400 MB VRAM headroom on 6 GB)"
+    },
+    "qwen3.5-9b": {
+      "name": "Qwen3.5-9B IQ4_XS, text only (small GPU, tight)",
+      "slot": "small", "server": "stock", "vram_gb": 6, "ctx": 16384, "vision": false,
+      "files": [["unsloth/Qwen3.5-9B-GGUF", "Qwen3.5-9B-IQ4_XS.gguf"]],
+      "model": "Qwen3.5-9B-IQ4_XS.gguf",
+      "args": "-c 16384 -ctk q8_0 -ctv q8_0 --temp 0.7 --top-p 0.8 --top-k 20",
+      "tested": "capability-suite candidate for the small GPU"
+    }
+  }
+}

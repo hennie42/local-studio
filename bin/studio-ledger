@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""studio-ledger: record and summarise who did each step of a studio project (local model vs Claude).
+
+  studio-ledger <project> add --step ID --owner claude|local|review --outcome pass|fail|partial [--note TEXT] [--seconds N]
+  studio-ledger <project> verdict --step ID --outcome pass|fail|partial [--note TEXT]   (judge the latest local attempt)
+  studio-ledger <project> summary [--json]
+
+studio-worker appends one line per local attempt automatically; Claude adds its own steps and verdicts.
+"""
+import argparse
+import datetime
+import json
+import pathlib
+import sys
+from collections import OrderedDict
+
+
+def load(ledger):
+    return [json.loads(l) for l in ledger.read_text().splitlines() if l.strip()] if ledger.exists() else []
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("project")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    add = sub.add_parser("add")
+    add.add_argument("--step", required=True)
+    add.add_argument("--owner", choices=["claude", "local", "review"], required=True)
+    add.add_argument("--outcome", choices=["pass", "fail", "partial"], required=True)
+    add.add_argument("--note", default="")
+    add.add_argument("--seconds", type=float)
+    v = sub.add_parser("verdict")
+    v.add_argument("--step", required=True)
+    v.add_argument("--outcome", choices=["pass", "fail", "partial"], required=True)
+    v.add_argument("--note", default="")
+    s = sub.add_parser("summary")
+    s.add_argument("--json", action="store_true")
+    a = ap.parse_args()
+    ledger = pathlib.Path(a.project).resolve() / ".studio/ledger.jsonl"
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    now = datetime.datetime.now().isoformat(timespec="seconds")
+    if a.cmd in ("add", "verdict"):
+        rec = {"step": a.step, "kind": a.cmd, "outcome": a.outcome, "note": a.note, "time": now}
+        if a.cmd == "add":
+            rec.update(owner=a.owner, seconds=a.seconds)
+        with ledger.open("a") as f:
+            f.write(json.dumps(rec) + "\n")
+        return 0
+    recs = load(ledger)
+    steps = OrderedDict()
+    for r in recs:
+        st = steps.setdefault(r["step"], {"local_attempts": 0, "local_seconds": 0.0, "claude": False, "outcome": None,
+                                          "notes": []})
+        if r.get("owner") == "local" and r.get("kind") is None:  # studio-worker attempt
+            st["local_attempts"] += 1
+            st["local_seconds"] += r.get("seconds") or 0
+        elif r.get("kind") == "verdict":
+            st["outcome"] = r["outcome"]
+            if r.get("note"):
+                st["notes"].append(r["note"])
+        elif r.get("kind") == "add":
+            if r.get("owner") == "claude":
+                st["claude"] = True
+            st["outcome"] = r["outcome"]
+            if r.get("note"):
+                st["notes"].append(r["note"])
+    done_local = [k for k, v in steps.items() if v["local_attempts"] and not v["claude"] and v["outcome"] == "pass"]
+    escalated = [k for k, v in steps.items() if v["local_attempts"] and v["claude"]]
+    claude_only = [k for k, v in steps.items() if v["claude"] and not v["local_attempts"]]
+    total = len(steps)
+    out = {"steps": total, "local": len(done_local), "escalated_to_claude": len(escalated), "claude_only": len(claude_only),
+           "local_share": round(len(done_local) / total, 3) if total else 0.0,
+           "local_attempts": sum(v["local_attempts"] for v in steps.values()),
+           "local_hours": round(sum(v["local_seconds"] for v in steps.values()) / 3600, 2),
+           "escalations": {k: steps[k]["notes"] for k in escalated}}
+    if a.json:
+        print(json.dumps(out, indent=1))
+        return 0
+    print(f"{out['local']}/{total} steps done locally ({out['local_share']:.0%}), {out['escalated_to_claude']} escalated to Claude, "
+          f"{out['claude_only']} Claude-only; {out['local_attempts']} local attempts, {out['local_hours']} h of local model time")
+    for k in escalated:
+        print(f"  escalated: {k}: {'; '.join(steps[k]['notes'])[:160]}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Start the llama-swap user service if needed and wait until it accepts requests.
+# Models themselves load on demand (first request waits for them).
+url="${LOCAL_LLM_URL:-$(python3 "$(dirname "$(readlink -f "$0")")/../../lib/studio_config.py" --shell | sed -n "s/^export STUDIO_LLAMA_URL=//p" | tr -d "'")}"
+curl -sf -o /dev/null "$url/v1/models" && exit 0
+systemctl --user start llama-swap || exit 1
+for _ in $(seq 1 60); do
+  curl -sf -o /dev/null "$url/v1/models" && exit 0
+  sleep 0.5
+done
+echo "llama-swap did not come up; see: journalctl --user -u llama-swap" >&2
+exit 1

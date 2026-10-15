@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""studio-worker: run one sandboxed local-LLM worker on a step of a studio project, and record it.
+
+  studio-worker <project-dir> --step <id> --prompt-file <file> [--model M] [--agent claude|opencode]
+                [--timeout S] [--resume SESSION_ID] [--small-model M]
+
+- The worker (claude-local or opencode) runs inside the project directory's sandbox; GPU/engine jobs go
+  through `studio` (broker). Default model/agent come from ~/.config/studio/routing.json if present.
+- Output stream: <project>/.studio/workers/<step>-<n>/agent.jsonl; one ledger line is appended to
+  <project>/.studio/ledger.jsonl; changes are left uncommitted for review.
+- Prints a compact JSON summary on stdout (result text, session id, turns, seconds, diff stat, denials).
+"""
+import argparse
+import datetime
+import json
+import pathlib
+import subprocess
+import sys
+import time
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+from studio_agents import AGENTS, parse_stream, worker_env  # noqa: E402
+
+ROUTING = pathlib.Path.home() / ".config/studio/routing.json"
+REGISTRY = pathlib.Path.home() / ".local/state/studio/projects"
+
+
+def defaults():
+    if ROUTING.exists():
+        r = json.loads(ROUTING.read_text())
+        return r.get("worker", {}).get("model", "bonsai2-27b"), r.get("worker", {}).get("agent", "claude"), r.get("small_model")
+    return "bonsai2-27b", "claude", None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("project")
+    ap.add_argument("--step", required=True)
+    ap.add_argument("--prompt-file", required=True)
+    ap.add_argument("--model")
+    ap.add_argument("--agent", choices=sorted(AGENTS))
+    ap.add_argument("--small-model")
+    ap.add_argument("--timeout", type=int, default=2400)
+    ap.add_argument("--resume")
+    a = ap.parse_args()
+    ws = pathlib.Path(a.project).resolve()
+    if not (ws / ".studio").is_dir():
+        sys.exit(f"{ws} is not a studio project (no .studio/)")
+    dm, da, ds = defaults()
+    model, agent, small = a.model or dm, a.agent or da, a.small_model or ds
+    prompt = pathlib.Path(a.prompt_file).read_text()
+    subprocess.run([str(pathlib.Path.home() / ".local/bin/ensure-llama-swap")], check=True)
+    if subprocess.run(["systemctl", "--user", "is-active", "-q", "studio-broker"]).returncode != 0:
+        subprocess.run(["systemctl", "--user", "start", "studio-broker"], check=True)
+    REGISTRY.parent.mkdir(parents=True, exist_ok=True)
+    if str(ws) not in (REGISTRY.read_text().splitlines() if REGISTRY.exists() else []):
+        with REGISTRY.open("a") as f:
+            f.write(f"{ws}\n")
+    workers = ws / ".studio/workers"
+    workers.mkdir(parents=True, exist_ok=True)
+    n = 1 + sum(1 for d in workers.glob(f"{a.step}-*") if d.is_dir())
+    cell = workers / f"{a.step}-{n}"
+    cell.mkdir()
+    (cell / "prompt.md").write_text(prompt)
+    argv, env_extra = AGENTS[agent](ws, model, prompt, resume=a.resume, small_model=small)
+    t0 = time.time()
+    with open(cell / "agent.jsonl", "w") as out, open(cell / "agent.err", "w") as err:
+        try:
+            code = subprocess.run(argv, cwd=ws, env=worker_env(env_extra), stdout=out, stderr=err,
+                                  stdin=subprocess.DEVNULL, timeout=a.timeout).returncode
+        except subprocess.TimeoutExpired:
+            code = 124
+    secs = round(time.time() - t0, 1)
+    m = parse_stream(agent, cell / "agent.jsonl")
+    if agent == "opencode":
+        (ws / "opencode.json").unlink(missing_ok=True)
+    subprocess.run(["git", "add", "-A"], cwd=ws, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # project changes only: the worker's own logs and the ledger live under .studio/
+    stat = subprocess.run(["git", "diff", "--cached", "--stat", "--", ".", ":(exclude).studio"], cwd=ws,
+                          capture_output=True, text=True).stdout.strip()
+    summary = {"step": a.step, "attempt": n, "owner": "local", "agent": agent, "model": model, "exit": code,
+               "seconds": secs, "turns": m["turns"], "peak_ctx": m["peak_ctx"], "session_id": m["session_id"],
+               "agent_error": m["agent_error"], "permission_denials": len(m["permission_denials"]),
+               "diff_stat": stat.splitlines()[-1] if stat else "no changes",
+               "log": str(cell.relative_to(ws)), "result": (m["result"] or "")[-3000:],
+               "time": datetime.datetime.now().isoformat(timespec="seconds")}
+    with open(ws / ".studio/ledger.jsonl", "a") as f:
+        f.write(json.dumps({k: v for k, v in summary.items() if k != "result"}) + "\n")
+    print(json.dumps(summary, indent=1))
+    return 0 if code == 0 and not m["agent_error"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

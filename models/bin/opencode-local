@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# OpenCode with the local llama-swap service started on demand.
+"$(dirname "$(readlink -f "$0")")/ensure-llama-swap" || exit 1
+exec opencode "$@"

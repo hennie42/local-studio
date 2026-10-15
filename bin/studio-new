@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# studio-new <Name> [--cpp | --godot] [--root DIR]
+# Create a studio project: UE 5.8 project from the template (default; --cpp adds a C++ module) or a Godot 4.7 project
+# (--godot: GDScript, export presets Linux/Web/Windows, version-matched reference bundle in godot-ref/:
+# API, manual, demo projects, verified cookbook; see godot-refresh),
+# AGENTS.md/CLAUDE.md, git + LFS, .studio/ (broker spool, ledger), registered with studio-broker.
+set -euo pipefail
+STUDIO=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
+eval "$(python3 "$STUDIO/lib/studio_config.py" --shell)"
+name=${1:?usage: studio-new <Name> [--cpp | --godot] [--root DIR]}; shift
+[[ $name =~ ^[A-Za-z][A-Za-z0-9_]{1,30}$ ]] || { echo "name must be an identifier (letters, digits, _)" >&2; exit 1; }
+cpp=0; godot=0; root=""
+while (($#)); do case $1 in --cpp) cpp=1;; --godot) godot=1;; --root) root=$2; shift;;
+  *) echo "unknown option $1" >&2; exit 1;; esac; shift; done
+((cpp && godot)) && { echo "--cpp and --godot exclude each other" >&2; exit 1; }
+if [[ -z $root ]]; then
+  if ((godot)); then root=$STUDIO_PROJECTS_GODOT; else root=$STUDIO_PROJECTS_UE; fi
+fi
+dir="$root/$name"
+[[ -e $dir ]] && { echo "$dir already exists" >&2; exit 1; }
+mkdir -p "$dir"
+if ((godot)); then
+  ref=${GODOT_REF_DIR:-$STUDIO_GODOT_HOME/ref-current}
+  [[ -f $ref/INDEX.md ]] || { echo "no Godot reference bundle at $ref (run: godot-refresh install)" >&2; exit 1; }
+  cp -r "$STUDIO/template/godot-base/." "$dir/"
+  sed -i "s/StudioGodot/$name/g" "$dir/project.godot" "$dir/export_presets.cfg"
+  cp -rL "$ref" "$dir/godot-ref"
+  cp "$STUDIO/template/AGENTS-godot.md" "$dir/AGENTS.md"
+  printf '@AGENTS.md\n' > "$dir/CLAUDE.md"
+  mkdir -p "$dir/.studio" "$dir/out" "$dir/Renders" "$dir/assets" "$dir/audio"
+  # .gdignore: Godot must not import renders, exports or the API text (it scans every folder)
+  touch "$dir/godot-ref/.gdignore" "$dir/out/.gdignore" "$dir/Renders/.gdignore"
+  printf '%s\n' .godot/ build/ godot-ref/ Renders/ shots/ .studio/spool/ .studio/logs/ .studio/grader/ \
+    .studio/workers/ .studio/check_scripts.gd __pycache__/ '*.blend1' > "$dir/.gitignore"
+  lfs=("*.glb" "*.blend" "*.wav" "*.ogg" "*.mp4" "*.png" "*.jpg" "*.exr" "*.ttf")
+else
+cp -r "$STUDIO/template/ue-base/." "$dir/"
+mv "$dir/StudioProject.uproject" "$dir/$name.uproject"
+if ((cpp)); then
+  mod=$name
+  python3 - "$dir/$name.uproject" "$mod" <<'EOF'
+import json, sys
+p, mod = sys.argv[1], sys.argv[2]
+d = json.load(open(p))
+d["Modules"] = [{"Name": mod, "Type": "Runtime", "LoadingPhase": "Default"}]
+json.dump(d, open(p, "w"), indent="\t")
+EOF
+  src="$STUDIO/template/cpp-min/Source"
+  mkdir -p "$dir/Source/$mod"
+  sed "s/StudioGame/$mod/g" "$src/StudioGame.Target.cs" > "$dir/Source/$mod.Target.cs"
+  sed "s/StudioGame/$mod/g" "$src/StudioGameEditor.Target.cs" > "$dir/Source/${mod}Editor.Target.cs"
+  sed "s/StudioGame/$mod/g" "$src/StudioGame/StudioGame.Build.cs" > "$dir/Source/$mod/$mod.Build.cs"
+  sed "s/StudioGame/$mod/g" "$src/StudioGame/StudioGame.cpp" > "$dir/Source/$mod/$mod.cpp"
+  cp "$src/StudioGame/GameEvent.h" "$dir/Source/$mod/GameEvent.h"
+fi
+cp "$STUDIO/template/AGENTS.md" "$dir/AGENTS.md"
+printf '@AGENTS.md\n' > "$dir/CLAUDE.md"
+mkdir -p "$dir/Scripts" "$dir/.studio" "$dir/assets" "$dir/audio" "$dir/out"
+lfs=("*.uasset" "*.umap" "*.glb" "*.fbx" "*.blend" "*.wav" "*.mp4" "*.mov" "*.png" "*.exr" "*.jpg")
+cat > "$dir/.gitignore" <<'EOF'
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+Build/
+Renders/
+.studio/spool/
+.studio/logs/
+.studio/grader/
+.studio/workers/
+__pycache__/
+*.blend1
+EOF
+fi
+cd "$dir"
+git init -q
+git lfs install --local >/dev/null
+git lfs track "${lfs[@]}" >/dev/null
+git add -A
+git -c user.name="${GIT_AUTHOR_NAME:-studio}" -c user.email="${GIT_AUTHOR_EMAIL:-studio@local}" commit -qm "New studio project $name"
+reg="$HOME/.local/state/studio/projects"
+mkdir -p "$(dirname "$reg")"
+grep -qxF "$dir" "$reg" 2>/dev/null || echo "$dir" >> "$reg"
+echo "$dir"

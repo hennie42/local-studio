@@ -1,0 +1,65 @@
+{
+  "_source": "capability suite 2026-10-07/08 (evals/scorecard-20261008.md) and Godot suite 2026-10-14 (evals/scorecard-godot-20261014.md) on the reference machine: RTX 5070 Ti 16 GB + RTX 2060 6 GB, 64 GB RAM",
+  "worker": {
+    "model": "qwen3.6-35b-a3b",
+    "agent": "claude",
+    "why": "19/20 agent runs passed (mean 0.99) across coding, UE Python/C++/render, Blender, ffmpeg, audio; median 2-7 min per task, 2-4x faster than Bonsai; peak context <= 87K of 131K"
+  },
+  "retry": {
+    "model": "bonsai2-27b",
+    "agent": "claude",
+    "why": "equal quality (19/20, mean 0.99) but a different model: a retry shouldn't repeat the first attempt's blind spot"
+  },
+  "long_context": {
+    "model": "bonsai2-27b",
+    "why": "3/3 recall at 24K/106K/188K, prefill ~900 tok/s; use for reading huge logs or files beyond ~100K tokens"
+  },
+  "log_triage_fast": {
+    "model": "spark-4b",
+    "why": "0.75 triage score in ~20 s on the small second GPU; first pass only, Claude confirms"
+  },
+  "vision_prescreen": {
+    "model": "qwen3.6-35b-a3b",
+    "why": "exposure 0.97, defects 0.94; Bonsai misses borderline overexposure. Pre-screen only: Claude makes the call"
+  },
+  "small_model": "spark-4b",
+  "never_delegate_to_small_models": [
+    "multi-step tool work",
+    "Blender",
+    "ffmpeg pipelines",
+    "Unreal"
+  ],
+  "harness": {
+    "use": "claude",
+    "why": "Claude Code worker: 19/20 per model; OpenCode with the same Bonsai: 7/10, slower, more context"
+  },
+  "gpu_policy": {
+    "mode": "timeshare",
+    "why": "agent context needs 20-112K (too much for the 32K co-resident mode); Qwen3.6 reloads in ~4-5 s (warm page cache), plus re-reading the worker's context at ~430 tok/s",
+    "render_1080p_8spp_150f_s": 34.5,
+    "small_gpu_can_render_ue": false
+  },
+  "claude_only": [
+    "brief, plan, shot design, final creative calls",
+    "visual QA verdicts (local vision is pre-screen only)",
+    "musical tempo/structure review (graders can't check tempo reliably)"
+  ],
+  "godot": {
+    "worker": {
+      "model": "gemma4-26b-a4b",
+      "agent": "claude",
+      "why": "Godot suite 2026-10-14 (1 run per task): 4/4 passed in 32 min total (port 3->4, race logic 21/21, platformer + exports, Movie Maker clip); fastest and fewest turns/context. PROVISIONAL until a 2nd run."
+    },
+    "retry": {
+      "model": "bonsai2-27b",
+      "agent": "claude",
+      "why": "also 4/4 (95 min, ~3x slower) and the best-looking clip by eye: use for retries and look-critical steps (lighting/composition)"
+    },
+    "not_recommended": {
+      "qwen3.6-35b-a3b": "1/4: syntax fine, fails on behaviour (platformer autopilot) and runs out of time",
+      "mellum2.1-12b": "0/4: loses the task inside Claude Code's long system prompt (12B too small for this harness)",
+      "qwen3.8-27b-q3": "untested: chat template error on the 'developer' role (fix + rerun pending)"
+    },
+    "scorecard": "evals/scorecard-godot-20261014.md"
+  }
+}

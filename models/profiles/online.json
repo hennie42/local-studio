@@ -1,0 +1,32 @@
+{
+  "description": "No local models: Claude models (API) do the work, no GPU needed for the LLM.",
+  "tested": false,
+  "big": [],
+  "small": [],
+  "preload": [],
+  "overrides": {},
+  "routing": {
+    "_source": "online mode: workers are Claude models via the Anthropic API (your own login/API key)",
+    "worker": {
+      "model": "claude-sonnet-5-5",
+      "agent": "claude"
+    },
+    "retry": {
+      "model": "claude-opus-5-5",
+      "agent": "claude"
+    },
+    "godot": {
+      "worker": {
+        "model": "claude-sonnet-5-5",
+        "agent": "claude"
+      },
+      "retry": {
+        "model": "claude-opus-5-5",
+        "agent": "claude"
+      }
+    },
+    "log_triage_fast": {
+      "model": "claude-haiku-4-5-20251001"
+    }
+  }
+}

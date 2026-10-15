@@ -1,0 +1,9 @@
+[Unit]
+Description=Install new Godot releases and rebuild the studio reference bundle (godot-refresh auto)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/godot-refresh auto
+Nice=10
+IOSchedulingClass=idle

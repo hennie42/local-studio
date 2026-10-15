@@ -1,0 +1,49 @@
+{
+  "description": "One 12 GB GPU (e.g. RTX 3060 12 GB/4070), 32-64 GB RAM. UNTESTED estimate.",
+  "tested": false,
+  "big": [
+    "bonsai2-27b",
+    "gemma4-26b-a4b",
+    "qwen3.6-35b-a3b"
+  ],
+  "small": [],
+  "preload": [
+    "bonsai2-27b"
+  ],
+  "overrides": {
+    "bonsai2-27b": {
+      "args": "-c 131072 -ctk q8_0 -ctv q8_0 --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.05",
+      "ctx": 131072
+    },
+    "gemma4-26b-a4b": {
+      "n_cpu_moe": 22
+    },
+    "qwen3.6-35b-a3b": {
+      "n_cpu_moe": 30
+    }
+  },
+  "routing": {
+    "_source": "UNTESTED estimate: Bonsai's ternary weights (6 GB) fit with 131K context; the MoE models move more experts to RAM (slower)",
+    "worker": {
+      "model": "bonsai2-27b",
+      "agent": "claude"
+    },
+    "retry": {
+      "model": "gemma4-26b-a4b",
+      "agent": "claude"
+    },
+    "godot": {
+      "worker": {
+        "model": "gemma4-26b-a4b",
+        "agent": "claude"
+      },
+      "retry": {
+        "model": "gemma4-26b-a4b",
+        "agent": "claude"
+      }
+    },
+    "gpu_policy": {
+      "mode": "timeshare"
+    }
+  }
+}

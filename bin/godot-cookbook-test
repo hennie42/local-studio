@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""godot-cookbook-test [--godot BIN] [--ref REF_DIR] [--keep]
+
+Verify the Godot cookbook (local-studio/godot/cookbook/*.gd) against an engine: copy the recipes into a fresh
+template project, run godot-check (Godot 3 lint + full compile), then run every recipe's run_selftest() headless.
+Each recipe is a script whose instance has `func run_selftest() -> String` (may await; "" = pass).
+Exit 0 only if everything passes. godot-refresh runs this before activating a new engine version.
+"""
+import argparse
+import os
+import pathlib
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+STUDIO = pathlib.Path(__file__).resolve().parents[1]
+RUNNER = r'''extends SceneTree
+func _init() -> void:
+	await process_frame
+	var files := DirAccess.get_files_at("res://cookbook")
+	var bad := 0
+	var n := 0
+	for f in files:
+		if not f.ends_with(".gd"):
+			continue
+		n += 1
+		var s: GDScript = load("res://cookbook/" + f)
+		if s == null or not s.can_instantiate():
+			print("COOKBOOK FAIL %s does not compile" % f); bad += 1; continue
+		var obj = s.new()
+		if obj is Node:
+			root.add_child(obj)
+		if not obj.has_method("run_selftest"):
+			print("COOKBOOK FAIL %s has no run_selftest()" % f); bad += 1; continue
+		var err: String = await obj.run_selftest()
+		if err == "":
+			print("COOKBOOK PASS %s" % f)
+		else:
+			print("COOKBOOK FAIL %s %s" % [f, err]); bad += 1
+		if obj is Node:
+			obj.queue_free()
+		await process_frame
+	print("COOKBOOK %d recipe(s), %d failed" % [n, bad])
+	quit(1 if bad else 0)
+'''
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--godot", default=os.environ.get("GODOT_BIN", str(pathlib.Path.home() / ".local/bin/godot")))
+    ap.add_argument("--ref", default=None)
+    ap.add_argument("--keep", action="store_true")
+    a = ap.parse_args()
+    td = pathlib.Path(tempfile.mkdtemp(prefix="cookbook-"))
+    ws = td / "Cookbook"
+    shutil.copytree(STUDIO / "template/godot-base", ws)
+    shutil.copytree(STUDIO / "godot/cookbook", ws / "cookbook", ignore=shutil.ignore_patterns("*.md"))
+    (ws / ".studio").mkdir()
+    (ws / ".studio/run_cookbook.gd").write_text(RUNNER)
+    env = {**os.environ, "GODOT_BIN": a.godot}
+    chk = subprocess.run([str(STUDIO / "bin/godot-check-all")], cwd=ws, capture_output=True, text=True, env=env)
+    print(chk.stdout.strip())
+    p = subprocess.run([a.godot, "--headless", "--path", str(ws), "--script", "res://.studio/run_cookbook.gd"],
+                       capture_output=True, text=True, timeout=600)
+    out = p.stdout + p.stderr
+    for line in out.splitlines():
+        if line.startswith("COOKBOOK") or "SCRIPT ERROR" in line or re.search(r"at: .*res://cookbook", line):
+            print(line)
+    ok = chk.returncode == 0 and p.returncode == 0 and re.search(r"COOKBOOK \d+ recipe\(s\), 0 failed", out)
+    if a.keep:
+        print(f"kept {ws}")
+    else:
+        shutil.rmtree(td, ignore_errors=True)
+    print("cookbook: " + ("all recipes pass" if ok else "FAILED"))
+    sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,54 @@
+{
+ "exposure": {
+  "good_1.jpg": {
+   "exposure": "good",
+   "black_frame": false
+  },
+  "over_1.jpg": {
+   "exposure": "overexposed",
+   "black_frame": false
+  },
+  "good_2.jpg": {
+   "exposure": "good",
+   "black_frame": false
+  },
+  "over_2.jpg": {
+   "exposure": "overexposed",
+   "black_frame": false
+  },
+  "good_3.jpg": {
+   "exposure": "good",
+   "black_frame": false
+  },
+  "over_3.jpg": {
+   "exposure": "overexposed",
+   "black_frame": false
+  },
+  "under_1.jpg": {
+   "exposure": "underexposed",
+   "black_frame": false
+  },
+  "black_1.jpg": {
+   "exposure": "underexposed",
+   "black_frame": true
+  },
+  "under_2.jpg": {
+   "exposure": "underexposed",
+   "black_frame": false
+  },
+  "black_2.jpg": {
+   "exposure": "underexposed",
+   "black_frame": true
+  }
+ },
+ "defect": {
+  "clean_1.jpg": "none",
+  "tex_1.jpg": "missing_texture",
+  "clean_2.jpg": "none",
+  "tex_2.jpg": "missing_texture",
+  "clean_3.jpg": "none",
+  "tex_3.jpg": "missing_texture",
+  "band_1.jpg": "black_band",
+  "band_2.jpg": "black_band"
+ }
+}

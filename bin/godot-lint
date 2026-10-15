@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""godot-lint [paths...]   (default: the current directory)
+
+Flags Godot 3 idioms in Godot 4 projects (.gd scripts and .tscn/.tres files): the main failure mode of LLM-written
+GDScript. Prints `file:line: [rule] message -> fix` and exits 1 if anything was found. Godot's own parser stops at the
+first error per file; this lists all of them. Run before every scene run (studio godot-check does both).
+"""
+import pathlib
+import re
+import sys
+
+# (rule id, regex on code with comments/strings removed, message -> Godot 4 fix)
+GD_RULES = [
+    ("export", r"^\s*export\b", "`export var` is Godot 3 -> `@export var x: T = ...` (or @export_range/@export_enum)"),
+    ("onready", r"^\s*onready\s+var\b", "`onready var` -> `@onready var`"),
+    ("tool", r"^\s*tool\s*$", "`tool` -> `@tool` (first line)"),
+    ("setget", r"\bsetget\b", "`setget` -> property syntax: `var x: T: set = _set_x, get = _get_x` or inline set(value):"),
+    ("yield", r"\byield\s*\(", "`yield(obj, \"signal\")` -> `await obj.signal` (e.g. `await get_tree().create_timer(1.0).timeout`)"),
+    ("connect3", r"\.connect\(\s*\"[A-Za-z_0-9]+\"\s*,\s*[^,()]+\s*,\s*\"", "3-arg `connect(\"sig\", target, \"method\")` -> `sig.connect(method)` / `obj.sig.connect(target.method)`"),
+    ("connect-str", r"\bconnect\(\s*\"[A-Za-z_0-9]+\"\s*,\s*self\b", "`connect(\"sig\", self, ...)` -> `sig.connect(_on_sig)`"),
+    ("move_and_slide-args", r"\bmove_and_slide\(\s*[^)\s]", "`move_and_slide(velocity, up)` -> set `velocity` (and `up_direction`) then call `move_and_slide()` with no args"),
+    ("instance", r"\.instance\(\s*\)", "`scene.instance()` -> `scene.instantiate()`"),
+    ("rand_range", r"\brand_range\s*\(", "`rand_range(a, b)` -> `randf_range(a, b)` / `randi_range`"),
+    ("stepify", r"\bstepify\s*\(", "`stepify` -> `snapped`"),
+    ("deg2rad", r"\b(deg2rad|rad2deg)\s*\(", "`deg2rad`/`rad2deg` -> `deg_to_rad`/`rad_to_deg`"),
+    ("str2var", r"\b(str2var|var2str|bytes2var|var2bytes)\s*\(", "-> `str_to_var` / `var_to_str` / `bytes_to_var` / `var_to_bytes`"),
+    ("json", r"\b(to_json|parse_json)\s*\(", "`to_json`/`parse_json` -> `JSON.stringify(v)` / `JSON.parse_string(s)`"),
+    ("funcref", r"\bfuncref\s*\(", "`funcref(obj, \"m\")` -> `Callable(obj, \"m\")` or `obj.m`"),
+    ("file-new", r"\bFile\.new\s*\(", "`File.new()` -> `FileAccess.open(path, FileAccess.READ)`"),
+    ("directory-new", r"\bDirectory\.new\s*\(", "`Directory.new()` -> `DirAccess.open(path)`"),
+    ("tween-new", r"\bTween\.new\s*\(", "Tween node is gone -> `var t := create_tween()` then `t.tween_property(...)`"),
+    ("os-ticks", r"\bOS\.get_(ticks_msec|ticks_usec|unix_time|datetime|time|date)\b", "`OS.get_ticks_msec()` etc. -> `Time.get_ticks_msec()` / `Time.get_unix_time_from_system()`"),
+    ("change_scene", r"\.change_scene\s*\(", "`change_scene(path)` -> `change_scene_to_file(path)` / `change_scene_to_packed(scene)`"),
+    ("empty", r"\.empty\s*\(\s*\)", "`.empty()` -> `.is_empty()`"),
+    ("linear_interpolate", r"\.linear_interpolate\s*\(", "`.linear_interpolate(b, t)` -> `.lerp(b, t)`"),
+    ("xform", r"\.xform(_inv)?\s*\(", "`t.xform(v)` -> `t * v` (`xform_inv(v)` -> `v * t`)"),
+    ("rpc-keywords", r"^\s*(remote|remotesync|master|puppet|mastersync|puppetsync)\s+func\b", "RPC keywords -> `@rpc(...)` annotation"),
+    ("network-master", r"\b(is_network_master|get_network_master|set_network_master)\s*\(", "-> `is_multiplayer_authority()` / `get_multiplayer_authority()` / `set_multiplayer_authority()`"),
+    ("button-const", r"\bBUTTON_(LEFT|RIGHT|MIDDLE|WHEEL_UP|WHEEL_DOWN)\b", "`BUTTON_LEFT` -> `MOUSE_BUTTON_LEFT`"),
+    ("servers", r"\b(VisualServer|PhysicsServer|Physics2DServer)\b", "-> `RenderingServer` / `PhysicsServer3D` / `PhysicsServer2D`"),
+    ("pool-arrays", r"\bPool(String|Int|Real|Byte|Vector2|Vector3|Color)Array\b", "`PoolXArray` -> `PackedXArray` (PoolRealArray -> PackedFloat32Array)"),
+    ("get-pos", r"\.(get_pos|set_pos|get_rot|set_rot)\s*\(", "use the `position` / `rotation` properties"),
+]
+# Godot 3 class names removed/renamed in 4 (as a type, base class, .new() or `is` check)
+RENAMED = {
+    "KinematicBody2D": "CharacterBody2D", "KinematicBody": "CharacterBody3D", "Spatial": "Node3D",
+    "Position2D": "Marker2D", "Position3D": "Marker3D", "Sprite": "Sprite2D (or Sprite3D)", "Particles2D": "GPUParticles2D",
+    "Particles": "GPUParticles3D", "RigidBody": "RigidBody3D", "StaticBody": "StaticBody3D", "Area": "Area3D",
+    "CollisionShape": "CollisionShape3D", "CollisionPolygon": "CollisionPolygon3D", "MeshInstance": "MeshInstance3D",
+    "Camera": "Camera3D", "Light": "Light3D", "DirectionalLight": "DirectionalLight3D", "OmniLight": "OmniLight3D",
+    "SpotLight": "SpotLight3D", "RayCast": "RayCast3D", "Path": "Path3D", "PathFollow": "PathFollow3D",
+    "Navigation2D": "NavigationRegion2D / NavigationServer2D", "Navigation": "NavigationRegion3D / NavigationServer3D",
+    "YSort": "Node2D with y_sort_enabled = true", "VisibilityNotifier2D": "VisibleOnScreenNotifier2D",
+    "VisibilityNotifier": "VisibleOnScreenNotifier3D", "Reference": "RefCounted", "ImmediateGeometry": "ImmediateMesh",
+    "ARVROrigin": "XROrigin3D", "CubeMesh": "BoxMesh", "SpatialMaterial": "StandardMaterial3D",
+    "ShaderMaterial2D": "ShaderMaterial", "TextureProgress": "TextureProgressBar", "ToolButton": "Button (flat = true)",
+    "ViewportContainer": "SubViewportContainer", "GIProbe": "VoxelGI", "BakedLightmap": "LightmapGI",
+    "AnimationTreePlayer": "AnimationTree", "StreamTexture": "CompressedTexture2D",
+}
+CLASS_RE = re.compile(r"(?<![\w.@\"'])(" + "|".join(sorted(map(re.escape, RENAMED), key=len, reverse=True)) + r")(?![\w])")
+
+
+def strip_code(line):
+    """Remove comments and string contents (keep quotes) so rules don't fire inside them."""
+    out, i, q = [], 0, None
+    while i < len(line):
+        c = line[i]
+        if q:
+            if c == "\\":
+                i += 2
+                continue
+            if c == q:
+                q = None
+                out.append(c)
+            i += 1
+            continue
+        if c in "\"'":
+            q = c
+            out.append(c)
+        elif c == "#":
+            break
+        else:
+            out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def strip_comment(line):
+    """Remove a trailing # comment but keep string literals (the connect rules need them)."""
+    q = None
+    i = 0
+    while i < len(line):
+        c = line[i]
+        if q:
+            if c == "\\":
+                i += 2
+                continue
+            if c == q:
+                q = None
+        elif c in "\"'":
+            q = c
+        elif c == "#":
+            return line[:i]
+        i += 1
+    return line
+
+
+def lint_gd(path, text):
+    hits = []
+    for n, raw in enumerate(text.splitlines(), 1):
+        code = strip_code(raw)
+        for rule, rx, msg in GD_RULES:
+            target = strip_comment(raw) if rule.startswith("connect") else code
+            if re.search(rx, target) and not (rule == "connect-str" and any(h[0] == n and h[1] == "connect3" for h in hits)):
+                hits.append((n, rule, msg))
+        for m in CLASS_RE.finditer(code):
+            name = m.group(1)
+            ctx = code[max(0, m.start() - 12): m.end() + 6]
+            # only flag type-like uses: extends X, X.new(), `is X`, `: X`, `as X`, -> X
+            if re.search(r"(extends\s+|\bis\s+|\bas\s+|:\s*|->\s*)" + re.escape(name) + r"\b", code) or \
+                    re.search(re.escape(name) + r"\s*\.new\s*\(", code):
+                hits.append((n, "renamed-class", f"`{name}` does not exist in Godot 4 -> `{RENAMED[name]}`"))
+                break
+    return hits
+
+
+def lint_scene(path, text):
+    hits = []
+    for n, line in enumerate(text.splitlines(), 1):
+        m = re.match(r"\[gd_(scene|resource)\b.*\bformat=(\d+)", line)
+        if m and int(m.group(2)) < 3:
+            hits.append((n, "scene-format", f"format={m.group(2)} is a Godot 3 file -> Godot 4 writes format=3"))
+        m = re.search(r'\btype="([A-Za-z0-9]+)"', line)
+        if m and m.group(1) in RENAMED and line.startswith("[node"):
+            hits.append((n, "renamed-class", f'node type "{m.group(1)}" -> "{RENAMED[m.group(1)].split()[0]}"'))
+    return hits
+
+
+def main():
+    roots = [pathlib.Path(p) for p in (sys.argv[1:] or ["."])]
+    files = []
+    for r in roots:
+        if r.is_file():
+            files.append(r)
+        else:
+            files += [p for p in r.rglob("*") if p.suffix in (".gd", ".tscn", ".tres")
+                      and not ({".godot", "godot-api", "godot-ref", "addons", ".studio"} & set(p.parts))]
+    total = 0
+    for f in sorted(files):
+        text = f.read_text(errors="replace")
+        hits = lint_gd(f, text) if f.suffix == ".gd" else lint_scene(f, text)
+        for n, rule, msg in hits:
+            print(f"{f}:{n}: [{rule}] {msg}")
+        total += len(hits)
+    print(f"godot-lint: {len(files)} file(s), {total} Godot 3 idiom(s)" + (" - fix them" if total else " - clean"))
+    sys.exit(1 if total else 0)
+
+
+if __name__ == "__main__":
+    main()

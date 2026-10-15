@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""studio: ask the studio broker to run a GPU/engine job for this project, and wait for it.
+
+Usage:  studio <action> [args...]       (run from anywhere inside the project)
+        studio help
+Actions (all paths relative to the project root, and must stay inside it):
+  ue-python  <Name.uproject> <script.py> [args]   run an Unreal Python script headless (no GPU)
+  ue-render  <Name.uproject> </Game/...RenderConfig> </Game/...Sequence> </Game/...Map>
+                                                  render with Movie Render Queue (GPU, takes minutes)
+  ue-build   <Name.uproject>                       compile the project's C++ editor target
+  ue-package <Name.uproject>                       package a Linux Shipping build to Build/Linux
+  blender    <script.py> [args] [--render]        run a Blender Python script headless
+  encode     <frames-dir> <fps> <out.mp4> [--prores]   frames -> video (NVENC)
+  ue-play    <Name.uproject> </Game/...Map> [seconds] [-flags]  run the game (-game) for N s, return its log (GPU)
+  run-packaged [seconds] [-flags]                 run the packaged build in Build/Linux for N s (GPU)
+  Godot projects (project.godot at the root):
+  godot-check                                     Godot 3 idiom lint + parse check of every .gd (no GPU)
+  godot-script <tools/x.gd> [--flags]             run a headless SceneTree script, e.g. a scene generator (no GPU)
+  godot-import                                    import new assets (glb/png/wav) headless (no GPU)
+  godot-play [scenes/x.tscn] [seconds] [--headless] [--flags]  run the game for N s, return its log
+                                                  (--headless: no window/GPU, fastest; logic + markers only)
+  godot-movie <scenes/x.tscn> <out_dir> <frames> [fps]  Movie Maker: PNG frames (+ frame.wav) (RTX 2060)
+  godot-export <linux|web|windows|all> [--debug]  export to build/<platform>/ (no GPU)
+  run-export [seconds] [--headless] [--flags]     run the Linux export in build/linux for N s
+The full log is written under .studio/logs/; only a filtered summary is printed.
+"""
+import json
+import pathlib
+import sys
+import time
+import uuid
+
+
+def project_root():
+    p = pathlib.Path.cwd().resolve()
+    for d in (p, *p.parents):
+        if (d / ".studio").is_dir():
+            return d
+    sys.exit("studio: no .studio/ directory found above the current directory (not a studio project)")
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("help", "-h", "--help"):
+        print(__doc__)
+        return 0
+    root = project_root()
+    req_dir, res_dir = root / ".studio/spool/req", root / ".studio/spool/res"
+    req_dir.mkdir(parents=True, exist_ok=True)
+    res_dir.mkdir(parents=True, exist_ok=True)
+    rid = time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:6]
+    tmp = req_dir / f".{rid}.tmp"
+    tmp.write_text(json.dumps({"id": rid, "action": sys.argv[1], "args": sys.argv[2:]}))
+    tmp.rename(req_dir / f"{rid}.json")
+    print(f"studio: submitted {sys.argv[1]} as {rid}; waiting for the broker...", flush=True)
+    res = res_dir / f"{rid}.json"
+    started, warned = time.time(), False
+    while not res.exists():
+        time.sleep(1)
+        if not warned and time.time() - started > 30 and (req_dir / f"{rid}.json").exists():
+            print("studio: request not picked up after 30 s - is studio-broker running and this project registered?", flush=True)
+            warned = True
+    r = json.loads(res.read_text())
+    if "error" in r:
+        print(f"studio: {r['action']} rejected/failed: {r['error']}")
+    else:
+        print(f"studio: {r['action']} finished with exit {r['exit']} in {r['duration_s']} s (full log: {r['log']})")
+        if r.get("unloaded_llm"):
+            print(f"studio: (unloaded {', '.join(r['unloaded_llm'])} for this GPU job; it reloads on the next request)")
+        print(r.get("summary", ""))
+    return r.get("exit", 1)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
