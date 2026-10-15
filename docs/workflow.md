@@ -28,7 +28,13 @@ where later steps need to know *why* something was decided.
 them in `~/.agents/skills/`, link them over (`ln -s ~/.agents/skills/grilling ~/.claude/skills/`). Skills added
 during a session show up after a restart.
 
-## 2. Brief to plan: a task graph of tickets
+## 2. Assets (planned)
+
+After the brief is approved, the director proposes free CC0 asset sets that fit it, you say yes or no per set on a
+local review page, and approved assets land in the project measured and ready, so tickets can name them by path.
+Designed, not built: [assets-design](assets-design.md).
+
+## 3. Brief to plan: a task graph of tickets
 
 The director turns the brief into `PLAN.md`: small steps ("tickets"), each with
 
@@ -38,7 +44,7 @@ The director turns the brief into `PLAN.md`: small steps ("tickets"), each with
   log `GAME_` markers, frame statistics of a render;
 - its dependencies, and a size one worker finishes in under ~20 minutes.
 
-## 3. Execution: one ticket at a time
+## 4. Execution: one ticket at a time
 
 ![What happens for one step: director, worker, broker, engine, git](diagrams/step-handover.drawio.svg)
 
@@ -52,7 +58,7 @@ runs ready tickets in dependency order on the local worker, makes 2-3 attempts p
 commits what passes, and escalates only tickets that failed every attempt. Claude then spends its tokens on the
 brief, the plan, escalations and milestone reviews, not on watching each step. The first pilot is a small Godot game.
 
-## 4. Review and delivery
+## 5. Review and delivery
 
 At each milestone the director does what checks can't: watches the render, plays the build, makes the creative
 calls. Delivery is the mp4 or packaged game, plus a report from the ledger of what was done locally, what was

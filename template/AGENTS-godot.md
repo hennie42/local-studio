@@ -85,7 +85,9 @@ Scripts attached to scene nodes: `node.set_script(load("res://scripts/x.gd"))`.
   scenes/main.tscn 30 --headless --autopilot`): physics, signals and markers all run, it takes seconds and needs no
   GPU. Add a position marker while tuning (e.g. `GameEvent.marker("POS", "x=%.0f y=%.0f" % [...])` every 0.5 s) so
   the log shows where the autopilot gets stuck. Run windowed with `--shots` only to look at the result (screenshots
-  in `shots/`). Errors in the log: `SCRIPT ERROR`, `ERROR:`,
+  in `shots/`). Non-linear games (branches, several endings, open areas): the plan names **scenarios** instead of
+  one route; each starts from a fixture, steers with navigation (never hand-made coordinates) and must log its
+  expected markers (`GAME_VISIT`, `GAME_ENDING`). Errors in the log: `SCRIPT ERROR`, `ERROR:`,
   `at: res://...:LINE`.
 - Exports: presets Linux / Web / Windows exist in export_presets.cfg; pick at export time with
   `studio godot-export <linux|web|windows|all>`. The web build uses the Compatibility renderer (no SDFGI, no

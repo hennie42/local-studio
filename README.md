@@ -71,7 +71,7 @@ yourself, then set `STUDIO_UE_ROOT` in `~/.config/studio/studio.env`.
 | `godot/cookbook/` | verified Godot recipes (each compiles and passes a self-test on every new Godot release) |
 | `models/` | local models: catalog, hardware profiles, config generator, llama.cpp build, downloads, `claude-local` |
 | `evals/` | capability suites, graders, scorecards, the multi-model comparison clip |
-| `docs/` | [workflow](docs/workflow.md), [models](docs/models.md), [architecture](docs/architecture.md), [Godot](docs/godot.md), [Unreal](docs/unreal.md), [local models](docs/local-models.md), [evals](docs/evals.md), [security](docs/security.md) |
+| `docs/` | [workflow](docs/workflow.md), [asset library design](docs/assets-design.md), [models](docs/models.md), [architecture](docs/architecture.md), [Godot](docs/godot.md), [Unreal](docs/unreal.md), [local models](docs/local-models.md), [evals](docs/evals.md), [security](docs/security.md) |
 
 ## Limits (honest)
 

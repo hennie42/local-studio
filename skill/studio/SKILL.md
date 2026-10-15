@@ -121,6 +121,9 @@ files the worker is touching.
 - Every game gets an `-autopilot` (UE) / `--autopilot` (Godot) mode that plays itself to the finish and logs
   `GAME_` markers: it is the automated end-to-end test, in the editor and in the packaged/exported build. Compiling
   is not testing: in Milestone 2 nine bugs compiled cleanly and only the autopilot playtest found them.
+  Non-linear games get layered tests instead of one run (docs/godot.md, "Testing non-linear games"): logic tests,
+  a reachability check of the progression graph, one scenario autopilot per route/ending (fixture start, objective
+  bot on navigation), a seeded random explorer, and a coverage check over all markers.
 - **Unreal**: C++ in `Source/<Name>/`; build with `studio ue-build`; levels via Python scripts; input via Enhanced
   Input set up in C++ (no Blueprint graphs: workers can't edit them). Package with `studio ue-package`, verify with
   `studio run-packaged 200 -autopilot` (markers via GameEvent.h: Shipping strips UE_LOG).

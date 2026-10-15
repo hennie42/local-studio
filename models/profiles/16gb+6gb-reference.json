@@ -38,7 +38,7 @@
     },
     "log_triage_fast": {
       "model": "spark-4b",
-      "why": "0.75 triage score in ~20 s on the small second GPU; first pass only, Claude confirms"
+      "why": "0.56-0.75 triage score (varies run to run) in ~20 s on the small second GPU; first pass only, Claude confirms. Gemma 4 E4B scores 0.69 but takes ~90 s (2026-10-15)"
     },
     "vision_prescreen": {
       "model": "gemma4-26b-a4b",

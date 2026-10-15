@@ -36,7 +36,8 @@ correct solution can't pass, or a wrong one can, measures nothing.
 | Godot | port Godot 3 -> 4, race logic vs hidden tests, platformer + exports (exported build must finish), Movie Maker clip |
 | vision / long context / triage | exposure and defect judgement on frames, recall at 24K-188K, Unreal log root causes |
 
-Scorecards: `evals/scorecard-20261008.md` (capability suite), `evals/scorecard-godot-20261014.md` (Godot).
+Scorecards: `evals/scorecard-20261008.md` (capability suite), `evals/scorecard-20261015.md` (Gemma 4 vs Qwen3.6 on
+the same tooling), `evals/scorecard-godot-20261014.md` (Godot), `evals/scorecard-small-20261015.md` (small-GPU models).
 The vision test frames are synthetic (`evals/assets/make_vision_assets.py`: labels true by construction); the
 2026-10-08 vision scores were measured on an earlier set of rendered frames.
 Discussion: [models.md](models.md).

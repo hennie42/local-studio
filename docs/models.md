@@ -13,7 +13,7 @@ productions. Other hardware: see [Choosing for your hardware](#choosing-for-your
 | default worker: Unreal, Blender, coding, ffmpeg, audio **and Godot** | **Gemma 4 26B-A4B** (UD-Q4_K_XL, experts partly in RAM) | 19/20 agent runs in the capability suite (Qwen3.6 16/20 on the same tooling), 8/8 in the Godot suite; fewest turns, smallest contexts; vision pre-screen 1.00 |
 | retry / long context / log triage / look-critical steps | **Bonsai 2 27B** (Qwen3.8-27B in ternary weights, PrismML fork) | also 19/20 and 8/8 Godot, a *different* model family (a retry doesn't repeat the first one's blind spot), 188K context recall 3/3, log triage 0.88, best-looking renders by eye; ~3x slower |
 | fallback worker | Qwen3.6-35B-A3B (UD-Q4_K_XL) | 16/20 on the same tooling, 4/8 Godot; fastest tokens but 2.3x the turns |
-| quick log triage on a small second GPU | Spark-X2.5-4B | 0.75 on log triage in ~20 s; never for multi-step tool work |
+| quick log triage on a small second GPU | Spark-X2.5-4B | 0.56-0.75 on log triage (varies run to run) in ~20 s; never for multi-step tool work |
 | director | Claude (Claude Code) | plans, reviews, makes the visual calls; local workers draft and the director verifies |
 
 ## Capability suite, rerun: Gemma 4 vs Qwen3.6 (2026-10-15)
