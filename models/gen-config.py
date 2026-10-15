@@ -104,7 +104,9 @@ def opencode(prof):
                        "modalities": {"input": ["text", "image"] if m.get("vision") else ["text"], "output": ["text"]},
                        "attachment": bool(m.get("vision"))}
     big, small = prof.get("big", []), prof.get("small", [])
-    d = {"$schema": "https://opencode.ai/config.json", "model": f"local/{big[0]}" if big else None,
+    worker = prof.get("routing", {}).get("worker", {}).get("model")
+    default = worker if worker in big else (big[0] if big else None)   # the routing worker when it is local
+    d = {"$schema": "https://opencode.ai/config.json", "model": f"local/{default}" if default else None,
          "small_model": f"local/{small[0] if small else big[0]}" if big else None,
          "provider": {"local": {"npm": "@ai-sdk/openai-compatible", "name": "llama-swap (local)",
                                 "options": {"baseURL": cfg["STUDIO_LLAMA_URL"].rstrip("/") + "/v1"}, "models": models}}}
@@ -132,8 +134,11 @@ def main():
     prof = profile(a.profile)
     text = {"llama-swap": llama_swap, "downloads": downloads, "opencode": opencode, "effective": effective}[a.what](prof)
     if a.out:
-        pathlib.Path(a.out).expanduser().parent.mkdir(parents=True, exist_ok=True)
-        pathlib.Path(a.out).expanduser().write_text(text)
+        out = pathlib.Path(a.out).expanduser()
+        out.parent.mkdir(parents=True, exist_ok=True)
+        if out.is_symlink():   # e.g. a link into a repo from an older setup: never write through it
+            out.unlink()
+        out.write_text(text)
         print(f"wrote {a.out}")
     else:
         sys.stdout.write(text)
