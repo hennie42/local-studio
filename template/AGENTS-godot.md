@@ -46,6 +46,28 @@ Godot's parser on each script. Fix everything it reports before running the game
 Use static types (`var hp: int = 3`, `:=`, typed function signatures): the parser then catches wrong method names
 and argument types at `godot-check` time instead of at runtime.
 
+## Godot 4 pitfalls that compile but misbehave (from the retros: retros/*/findings.jsonl)
+`godot-lint` (part of `studio godot-check`) flags the first four; avoid all of them:
+1. **Anchors and grow direction.** A Control anchored to the bottom, the right or the centre grows from its top-left
+   by default, so it hangs off its anchor (bottom panels end up below the window, centred ones off-centre). After
+   `set_anchors_and_offsets_preset(...)` set `grow_vertical = Control.GROW_DIRECTION_BEGIN` (bottom),
+   `grow_horizontal = Control.GROW_DIRECTION_BEGIN` (right) or both `GROW_DIRECTION_BOTH` (centre).
+2. **Full-screen Controls eat clicks.** `mouse_filter` defaults to STOP: a full-rect root Control or overlay blocks
+   every click on the 3D world. Set `MOUSE_FILTER_IGNORE` on layout roots, overlays, labels and effects.
+3. **Value types are never null.** `x as Vector2i` on null is an error, and `if v == null` on a Vector2i is always
+   false. Keep the `Variant`, test it, then convert.
+4. **Label3D is not a Control.** No `add_theme_*_override`; use its properties (`font`, `font_size`, `modulate`,
+   `outline_modulate`, `outline_size`).
+5. **Typed code is checked strictly here:** a variable inferred from a Variant is a warning treated as an error
+   (`var x := dict.get("k")` -> `var x: int = dict.get("k")`); assigning an untyped `Array` to `Array[String]` fails
+   at runtime: build typed arrays explicitly.
+6. **Freeing from timers:** check `is_instance_valid(node)` before `queue_free()` in a timer or tween callback;
+   the owner may have freed it already.
+7. **Long-lived nodes that drive shared state** (a camera, the HUD) must stop when they are done: `set_process(false)`
+   and `queue_free()` at the end, on every path (an intro that only freed itself when skipped kept steering the
+   camera after it ended).
+8. **Asset origins:** a model's mesh can sit off its origin; check placement in a screenshot, don't assume centred.
+
 ## Project layout and conventions
 - `project.godot`: renderer Forward+ (Compatibility on the web), viewport 1920x1080 with stretch mode `viewport`
   (deterministic output resolution for Movie Maker and screenshots; the window size doesn't matter).

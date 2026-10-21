@@ -25,6 +25,7 @@ DEFAULTS = {
     "STUDIO_MODELS_DIR": str(HOME / "llm-models"),                 # GGUF files for llama-swap
     "STUDIO_UE_ROOT": "",                                          # Unreal Engine install; empty = not installed
     "STUDIO_GODOT_HOME": str(HOME / ".local/share/studio/godot"),  # godot-refresh: engines + reference bundles
+    "STUDIO_ASSET_HOME": str(HOME / "StudioProjects/assets"),      # studio-assets: CC0 library index + mirror
     # models
     "STUDIO_LLAMA_URL": "http://127.0.0.1:8080",                   # llama-swap (local models); unused online-only
     "STUDIO_GPU_POLICY": "timeshare",                              # timeshare | coresident

@@ -1,7 +1,8 @@
 # Asset library: design
 
-**Status: design, not built.** Decided in a `/grill-me` interview on 2026-10-15. To be built before the first Godot
-pilot, and only on the user's go-ahead.
+**Status: v1 built 2026-10-16** (user guide: [assets.md](assets.md)). Decided in a `/grill-me` interview on
+2026-10-15. Deviations from the design below: KayKit zips are downloaded by hand into an inbox (itch.io's
+robots.txt forbids automated downloads); Kenney + KayKit measured ~1 GB, so both are mirrored per file.
 
 **Goal:** after a brief is approved, the director proposes free assets that fit it; the user says yes or no per set;
 approved assets land in the project, checked and ready, so workers place assets instead of modelling them. Local
@@ -30,7 +31,7 @@ workers are good at placing things and bad at modelling them (see [models](model
 | Gaps | Never filled silently: the director flags the gap and proposes an alternative (a procedural Blender model, AI 3D generation if the bake-off pays off, or changing the brief). |
 | Engines | Godot first. Unreal after the Godot version has run on a real project: same library, review and manifest, only the import differs. |
 
-## Planned shape (nothing below exists yet)
+## Shape (built)
 
 - `bin/studio-assets` with `sync`, `search`, `propose`, `review`, `fetch`, `check`; one small adapter per source in
   `lib/`; `STUDIO_ASSET_HOME` in `studio.env`; the installer offers the first sync as an optional step; a weekly

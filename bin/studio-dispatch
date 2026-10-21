@@ -1,0 +1,349 @@
+#!/usr/bin/env python3
+"""studio-dispatch: run a project's ticket graph on the local worker (docs/workflow.md, "Execution").
+
+  studio-dispatch <project> status
+  studio-dispatch <project> run [--only ID...] [--max N] [--dry-run [--keep]]
+  studio-dispatch <project> mark ID pass|pending|escalated [--note TEXT]   (after the director fixed or reset it)
+  studio-dispatch <project> show ID                                          (prompt, check, attempts, last output)
+
+Tickets live in <project>/tickets.json:
+  {"preamble": "tickets/PREAMBLE.md",                       text prepended to every ticket prompt
+   "tickets": [{"id": "T03", "title": "...", "deps": ["T01"], "prompt": "tickets/T03.md",
+                "check": "studio godot-check && studio godot-script tests/test_board.gd",
+                "check_pass": "ALL TESTS PASSED",          optional: a line the check output must contain
+                "owner": "local" | "claude", "attempts": 3, "timeout": 2400, "protect": ["tests/**"],
+                "tests": ["test_board_core.gd"]}]}           staged from tickets/tests/<name>.txt (see below)
+
+Per ticket, until one attempt passes, in the order of routing.json godot.attempts.order (default: (1) the Godot
+worker (Gemma 4) on the ticket; (2) a fresh session on the retry model (Bonsai) with the ticket plus the last check
+output; (3) that Bonsai session resumed with the new check output; measured on the pilot: Gemma's own follow-ups
+never passed). The director's check runs on the files in the project, never on the worker's claims. Files under
+"protect" (the acceptance tests) are restored before each check, so a worker cannot pass by editing the test.
+"tests" are staged acceptance tests: they live as tickets/tests/<name>.txt (nothing parses .txt, so a test for a
+later ticket can't confuse an earlier worker's `godot-check`) and are copied to tests/<name> when the ticket starts
+and again right before the check (undoing any edit). Pass: commit "<id>: <title> (attempt n, model)". All attempts failed: the last diff is saved as
+.studio/escalations/<id>.patch (every failed attempt: .studio/attempts/<id>-<n>.patch) with the check output, the tree is reset, and the ticket is "escalated" for the
+director; tickets that depend on it wait, the rest carry on. Tickets owned by "claude" are never dispatched.
+State: .studio/dispatch.json; events: .studio/dispatch.log (one line each). Stops between tickets when
+<project>/.studio/PAUSE or $STUDIO_EVAL_HOME/runs/PAUSE exists.
+"""
+import argparse
+import datetime
+import fnmatch
+import json
+import os
+import pathlib
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+from studio_config import path as cfg_path  # noqa: E402
+
+ROUTING = pathlib.Path.home() / ".config/studio/routing.json"
+BIN = pathlib.Path(__file__).resolve().parent
+GIT_ID = ["-c", "user.name=studio", "-c", "user.email=studio@local"]
+FOLLOWUP = """The acceptance check for this ticket failed. The director ran:
+
+    {check}
+
+Its output (last part):
+
+{output}
+
+Fix the problem so that this check passes on the files in the project. Do not edit the test files; they are
+the specification. Then report what you changed."""
+RETRY = """{prompt}
+
+## A previous attempt failed
+
+Another worker tried this ticket and the director's check still failed. The check's output was:
+
+{output}
+
+Start from the current project files (the failed attempt was discarded)."""
+
+
+# 2026-10-18, pilot: Gemma's follow-ups went 0/3 (all ran out the clock), Bonsai's fresh retries 3/3: so after the
+# worker's first try, the retry model gets a fresh start and then a follow-up in its own session
+DEFAULT_ATTEMPTS = ["first:worker", "retry:retry", "followup:retry"]
+
+
+def now():
+    return datetime.datetime.now().isoformat(timespec="seconds")
+
+
+class Dispatcher:
+    def __init__(self, project):
+        self.p = pathlib.Path(project).resolve()
+        spec = json.loads((self.p / "tickets.json").read_text())
+        self.preamble = (self.p / spec["preamble"]).read_text() if spec.get("preamble") else ""
+        self.tickets = {t["id"]: t for t in spec["tickets"]}
+        self.order = [t["id"] for t in spec["tickets"]]
+        self.state_p = self.p / ".studio/dispatch.json"
+        self.state = json.loads(self.state_p.read_text()) if self.state_p.exists() else {}
+        for tid in self.order:
+            self.state.setdefault(tid, {"status": "pending", "attempts": []})
+        r = json.loads(ROUTING.read_text()) if ROUTING.exists() else {}
+        g = r.get("godot", {})
+        self.worker = g.get("worker", r.get("worker", {})).get("model", "gemma4-26b-a4b")
+        self.retry = g.get("retry", r.get("retry", {})).get("model", "bonsai2-27b")
+        # attempt order, "kind:role" (kind first|retry|followup, role worker|retry); routing.json godot.attempts
+        self.attempts = g.get("attempts", {}).get("order", DEFAULT_ATTEMPTS)
+
+    # ------------------------------------------------------------------ bookkeeping
+    def save(self):
+        self.state_p.write_text(json.dumps(self.state, indent=1) + "\n")
+
+    def log(self, msg):
+        line = f"{now()} {msg}"
+        print(line, flush=True)
+        with open(self.p / ".studio/dispatch.log", "a") as f:
+            f.write(line + "\n")
+
+    def git(self, *args, check=False):
+        return subprocess.run(["git", *GIT_ID, *args], cwd=self.p, capture_output=True, text=True, check=check)
+
+    def ledger(self, **kw):
+        with open(self.p / ".studio/ledger.jsonl", "a") as f:
+            f.write(json.dumps({"time": now(), **kw}) + "\n")
+
+    def paused(self):
+        return (self.p / ".studio/PAUSE").exists() or (cfg_path("STUDIO_EVAL_HOME") / "runs/PAUSE").exists()
+
+    def ready(self, only=None):
+        out = []
+        for tid in self.order:
+            t, s = self.tickets[tid], self.state[tid]
+            if s["status"] != "pending" or t.get("owner", "local") != "local" or (only and tid not in only):
+                continue
+            if all(self.state.get(d, {}).get("status") == "pass" for d in t.get("deps", [])):
+                out.append(tid)
+        return out
+
+    # ------------------------------------------------------------------ one ticket
+    def reset_tree(self):
+        """Back to the last commit; the worker's logs and the dispatcher's state under .studio/ survive."""
+        self.git("reset", "-q", "--hard", "HEAD")
+        self.git("clean", "-qfd", "-e", ".studio", "-e", ".godot")
+
+    def save_patch(self, path):
+        """The working tree's changes against HEAD (new files included), outside .studio/."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.git("add", "-A")
+        path.write_text(self.git("diff", "--cached", "--", ".", ":(exclude).studio").stdout)
+
+    def restore_protected(self, t):
+        pats = t.get("protect", [])
+        if not pats:
+            return []
+        changed = [l[3:] for l in self.git("status", "--porcelain").stdout.splitlines()]
+        hit = [f for f in changed if any(fnmatch.fnmatch(f, p) for p in pats)]
+        for f in hit:
+            if self.git("cat-file", "-e", f"HEAD:{f}").returncode == 0:
+                self.git("checkout", "HEAD", "--", f)
+            else:
+                (self.p / f).unlink(missing_ok=True)
+        return hit
+
+    def stage_tests(self, t):
+        for name in t.get("tests", []):
+            src = self.p / "tickets/tests" / (name + ".txt")
+            dst = self.p / "tests" / name
+            dst.parent.mkdir(exist_ok=True)
+            if not src.exists():
+                raise SystemExit(f"{t['id']}: staged test {src} is missing")
+            if not dst.exists() or dst.read_bytes() != src.read_bytes():
+                dst.write_bytes(src.read_bytes())
+
+    def run_check(self, t):
+        try:
+            r = subprocess.run(["bash", "-lc", t["check"]], cwd=self.p, capture_output=True, text=True,
+                               timeout=t.get("check_timeout", 900))
+            out, code = (r.stdout + r.stderr), r.returncode
+        except subprocess.TimeoutExpired as e:
+            out, code = f"check timed out after {e.timeout} s\n{(e.stdout or b'')[-3000:]!r}", 124
+        ok = code == 0 and (t.get("check_pass") is None or t["check_pass"] in out)
+        return ok, out[-6000:]
+
+    def worker_run(self, t, prompt, model, resume=None, dry=False):
+        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
+            f.write(prompt)
+        cmd = [str(BIN / "studio-worker"), str(self.p), "--step", t["id"], "--prompt-file", f.name,
+               "--model", model, "--timeout", str(t.get("timeout", 2400))]
+        if resume:
+            cmd += ["--resume", resume]
+        if dry:
+            cmd = [os.environ.get("STUDIO_DISPATCH_STUB", "true"), t["id"], f.name]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        os.unlink(f.name)
+        try:
+            return json.loads(r.stdout[r.stdout.index("{"):])
+        except ValueError:
+            return {"exit": r.returncode, "session_id": None, "result": (r.stdout + r.stderr)[-2000:]}
+
+    def attempt_plan(self, t):
+        n = t.get("attempts", 3)
+        plan = []
+        for item in self.attempts:
+            kind, _, role = item.partition(":")
+            plan.append((kind, self.retry if role == "retry" else self.worker))
+        return plan[:n] + [("retry", self.retry)] * max(0, n - len(plan))
+
+    def do_ticket(self, tid, dry=False):
+        t, s = self.tickets[tid], self.state[tid]
+        base = (self.preamble + "\n\n" if self.preamble else "") + (self.p / t["prompt"]).read_text()
+        s["status"] = "running"
+        self.save()
+        self.reset_tree()
+        last_out, session, session_model = "", None, None
+        for i, (kind, model) in enumerate(self.attempt_plan(t), 1):
+            if kind == "first":
+                prompt, resume = base, None
+            elif kind == "followup" and session and session_model == model:   # continue that model's own session
+                prompt, resume = FOLLOWUP.format(check=t["check"], output=last_out[-4000:]), session
+            else:
+                self.reset_tree()
+                prompt, resume = RETRY.format(prompt=base, output=last_out[-4000:]), None
+            self.stage_tests(t)
+            self.log(f"{tid} attempt {i} ({kind}, {model}) started")
+            t0 = time.time()
+            w = self.worker_run(t, prompt, model, resume, dry)
+            if w.get("session_id"):
+                session, session_model = w["session_id"], model
+            restored = self.restore_protected(t)
+            self.stage_tests(t)
+            ok, last_out = self.run_check(t)
+            rec = {"n": i, "kind": kind, "model": model, "seconds": round(time.time() - t0),
+                   "worker_exit": w.get("exit"), "turns": w.get("turns"), "diff": w.get("diff_stat"),
+                   "check": "pass" if ok else "fail", "protected_restored": restored, "time": now()}
+            s["attempts"].append(rec)
+            s["last_output"] = last_out[-3000:]
+            self.save()
+            self.ledger(step=tid, owner="local", model=model, attempt=i, outcome="pass" if ok else "fail",
+                        note=f"dispatcher {kind}; check {'pass' if ok else 'fail'}"
+                             + (f"; restored protected {restored}" if restored else ""))
+            self.log(f"{tid} attempt {i} ({kind}, {model}): check {'PASS' if ok else 'FAIL'} in {rec['seconds']} s"
+                     + (f"; restored edited tests {restored}" if restored else ""))
+            if not ok:   # keep every failed attempt: a retry starts from a reset tree
+                self.save_patch(self.p / f".studio/attempts/{tid}-{i}.patch")
+            if ok:
+                self.git("add", "-A")
+                c = self.git("commit", "-qm", f"{tid}: {t['title']} (attempt {i}, {model}, dispatcher)")
+                s["status"] = "pass"
+                # a pass can change nothing tracked (e.g. exports into an ignored build/): don't credit HEAD to it
+                s["commit"] = self.git("rev-parse", "--short", "HEAD").stdout.strip() if c.returncode == 0 \
+                    else "no changes"
+                self.save()
+                return True
+        # every attempt failed: keep the evidence, reset, escalate
+        esc = self.p / ".studio/escalations"
+        self.save_patch(esc / f"{tid}.patch")
+        (esc / f"{tid}.check.txt").write_text(last_out)
+        self.reset_tree()
+        s["status"] = "escalated"
+        self.save()
+        self.log(f"{tid} ESCALATED after {len(s['attempts'])} attempts: .studio/escalations/{tid}.patch")
+        return False
+
+    # ------------------------------------------------------------------ commands
+    def run(self, only=None, max_n=None, dry=False):
+        dirty = [l for l in self.git("status", "--porcelain", "--", ".", ":(exclude).studio").stdout.splitlines()
+                 if not l.endswith(".import")]   # Godot rewrites .import files on every import: not real changes
+        if dirty:
+            sys.exit("the project has uncommitted changes: commit or stash them first (the dispatcher resets the tree)")
+        done = 0
+        while True:
+            if self.paused():
+                self.log("PAUSE file found: stopping between tickets")
+                break
+            r = self.ready(only)
+            if not r or (max_n and done >= max_n):
+                break
+            self.do_ticket(r[0], dry)
+            done += 1
+        waiting = [t for t in self.order if self.state[t]["status"] == "pending"]
+        self.log(f"dispatch stopped: {self.summary()}" + (f"; waiting: {', '.join(waiting)}" if waiting else ""))
+
+    def summary(self):
+        from collections import Counter
+        c = Counter(self.state[t]["status"] for t in self.order)
+        return ", ".join(f"{k} {v}" for k, v in sorted(c.items()))
+
+    def status(self):
+        for tid in self.order:
+            t, s = self.tickets[tid], self.state[tid]
+            att = " ".join(f"{a['n']}:{a['check']}" for a in s["attempts"])
+            deps = ",".join(t.get("deps", []))
+            print(f"{tid:5s} {s['status']:10s} {t.get('owner', 'local'):6s} deps[{deps}] {t['title']}  {att}")
+        print(self.summary())
+
+    def show(self, tid):
+        t, s = self.tickets[tid], self.state[tid]
+        print(json.dumps({"ticket": t, "state": {k: v for k, v in s.items() if k != "last_output"}}, indent=1))
+        print("---- last check output ----\n" + s.get("last_output", ""))
+
+    def mark(self, tid, status, note=""):
+        self.state[tid]["status"] = status
+        self.state[tid].setdefault("notes", []).append({"time": now(), "status": status, "note": note})
+        self.save()
+        self.log(f"{tid} marked {status} by the director{': ' + note if note else ''}")
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("project")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("status")
+    p = sub.add_parser("run"); p.add_argument("--only", nargs="*"); p.add_argument("--max", type=int)
+    p.add_argument("--dry-run", action="store_true", help="use $STUDIO_DISPATCH_STUB instead of studio-worker, in a temporary clone")
+    p.add_argument("--keep", action="store_true", help="with --dry-run: keep the clone afterwards (default: deleted)")
+    p = sub.add_parser("mark"); p.add_argument("id"); p.add_argument("status", choices=["pass", "pending", "escalated"])
+    p.add_argument("--note", default="")
+    p = sub.add_parser("show"); p.add_argument("id")
+    a = ap.parse_args()
+    project = a.project
+    registry = pathlib.Path.home() / ".local/state/studio/projects"   # the broker serves only these
+    if a.cmd == "run" and a.dry_run:
+        # a dry run resets trees, saves state and escalates: do all of that in a throwaway clone
+        scratch = cfg_path("STUDIO_EVAL_HOME") / "scratch"
+        scratch.mkdir(parents=True, exist_ok=True)
+        project = pathlib.Path(tempfile.mkdtemp(prefix="dispatch-dry-", dir=scratch)) / "project"
+        subprocess.run(["git", "clone", "-q", "--no-hardlinks", a.project, str(project)], check=True)
+        # a clone gets LFS pointers only: copy the objects, or models, textures and fonts are missing
+        lfs = pathlib.Path(a.project) / ".git/lfs/objects"
+        if lfs.is_dir():
+            shutil.copytree(lfs, project / ".git/lfs/objects")
+            subprocess.run(["git", "-C", str(project), "lfs", "install", "--local"], capture_output=True, check=True)
+            subprocess.run(["git", "-C", str(project), "lfs", "checkout"], capture_output=True, check=True)
+        (project / ".studio").mkdir(exist_ok=True)
+        real_state = pathlib.Path(a.project) / ".studio/dispatch.json"
+        if real_state.exists():
+            (project / ".studio/dispatch.json").write_bytes(real_state.read_bytes())
+        with open(registry, "a") as f:
+            f.write(f"{project}\n")
+        print(f"dry run in {project} (the real project is not touched)", flush=True)
+    d = Dispatcher(project)
+    if a.cmd == "status":
+        d.status()
+    elif a.cmd == "run":
+        try:
+            d.run(a.only, a.max, a.dry_run)
+        finally:
+            if a.dry_run:
+                keep = [l for l in registry.read_text().splitlines() if l != str(project)]
+                registry.write_text("".join(l + "\n" for l in keep))
+                if a.keep:
+                    print(f"kept the dry-run clone: {project}", flush=True)
+                else:
+                    shutil.rmtree(project.parent)
+    elif a.cmd == "mark":
+        d.mark(a.id, a.status, a.note)
+    elif a.cmd == "show":
+        d.show(a.id)
+
+
+if __name__ == "__main__":
+    main()

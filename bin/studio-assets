@@ -1,0 +1,342 @@
+#!/usr/bin/env python3
+"""studio-assets: the studio's CC0 asset library (design: docs/assets-design.md, guide: docs/assets.md).
+
+  studio-assets sync [SOURCE...] [--no-thumbs]
+                                     refresh the index (kenney, kaykit, polyhaven, ambientcg; default all), then
+                                     render thumbnails + measure mirrored models that lack them (weekly timer)
+  studio-assets search QUERY [--kind K] [--source S] [--style S] [--pack P] [-n N] [--json]
+  studio-assets show ID              one asset's row (licence, size, files)
+  studio-assets stats                assets per source and kind
+  studio-assets propose PROJECT FILE.json   validate a director's proposal and store it in PROJECT/assets/proposals/
+  studio-assets review PROJECT [--port N] [--no-browser]
+                                     local page to say yes/no per set and veto items; blocks until saved
+  studio-assets fetch PROJECT [--res 1k|2k|4k]   copy approved assets into PROJECT/assets/, manifest + CREDITS.md
+  studio-assets check PROJECT [--fix]            measure 3D models (size, origin, tris); --fix applies generated
+                                                 Blender fixes; Godot projects get import collisions
+  studio-assets taste [-n N]         recent review decisions (read before every proposal)
+  studio-assets style PROJECT [--lock TEXT|--unlock] [--allow STYLE ...] [--res 1k|2k|4k]
+                                     --allow: extra styles the lock accepts (e.g. "KayKit low-poly")
+
+Library: STUDIO_ASSET_HOME (studio.env). Workers never call this: they only see PROJECT/assets/.
+"""
+import argparse
+import json
+import os
+import pathlib
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+import studio_assets as sa  # noqa: E402
+
+STUDIO = pathlib.Path(__file__).resolve().parents[1]
+
+
+def cmd_sync(a):
+    c = sa.sync(a.sources or None)
+    if not a.no_thumbs:
+        n = sa.render_thumbs(c)
+        sa.log(f"thumbs: {n} models measured/rendered")
+    for r in sa.stats(c):
+        print(f"  {r['source']:10s} {r['kind']:9s} {r['n']:7d}  {r['bytes'] / 1e6:9.1f} MB")
+    # every mirrored model needs a preview, or review pages show blanks (DontPanicTrailer F8: all 1226 KayKit
+    # models had none for days and nobody noticed until a review page was empty)
+    missing = c.execute("select source, count(*) from assets where kind = 'model' and path is not null"
+                        " and thumb is null group by source").fetchall()
+    if missing:
+        for src, n in missing:
+            print(f"WARNING: {n} {src} models have no thumbnail; run: studio-assets sync {src}")
+        sys.exit(1)
+
+
+def show_row(r, full=False):
+    dims = json.loads(r["dims_m"]) if r.get("dims_m") else None
+    extra = []
+    if dims:
+        extra.append("x".join(f"{d:.2f}" for d in dims) + " m")
+    if r.get("tris"):
+        extra.append(f"{r['tris']} tris")
+    line = f"{r['id']}  [{r['kind']}, {r['style']}]  {', '.join(extra)}"
+    if full:
+        line += f"\n  name: {r['name']}  pack: {r['pack']}  category: {r['category']}\n  tags: {r['tags']}\n" \
+                f"  licence: {r['license']} (checked {r['license_checked']}): {r['license_note']}\n  page: {r['page_url']}\n" \
+                f"  thumb: {sa.HOME / r['thumb'] if r.get('thumb') and not r['thumb'].startswith('http') else r.get('thumb')}"
+        if r.get("path"):
+            line += f"\n  file: {sa.HOME / r['path']}"
+    return line
+
+
+def cmd_search(a):
+    rows = sa.search(sa.db(), " ".join(a.query), a.kind, a.source, a.style, a.pack, a.n)
+    if a.json:
+        print(json.dumps(rows, indent=1))
+    else:
+        for r in rows:
+            print(show_row(r))
+        if not rows:
+            print("no match (try fewer words, or --kind/--source filters)")
+
+
+def cmd_show(a):
+    r = sa.get(sa.db(), a.id)
+    if not r:
+        sys.exit(f"unknown asset {a.id}")
+    print(show_row(r, full=True))
+    if r["kind"] == "pack":
+        for x in sa.search(sa.db(), "", pack=r["pack"], source=r["source"], limit=10000):
+            if x["kind"] != "pack":
+                print("  ", show_row(x))
+
+
+def cmd_stats(a):
+    c = sa.db()
+    for r in sa.stats(c):
+        print(f"{r['source']:10s} {r['kind']:9s} {r['n']:7d}  {r['bytes'] / 1e6:9.1f} MB")
+    for k, v in c.execute("select key, value from meta order by key"):
+        print(f"{k}: {v}")
+
+
+def cmd_propose(a):
+    prop = json.loads(pathlib.Path(a.file).read_text())
+    p, errors, warnings = sa.add_proposal(sa.db(), a.project, prop)
+    for w in warnings:
+        print("warning:", w)
+    if errors:
+        for e in errors:
+            print("error:", e)
+        sys.exit(1)
+    n = sum(len(s["items"]) for need in prop["needs"] for s in need["sets"])
+    print(f"stored {p} ({len(prop['needs'])} needs, {n} items). Next: studio-assets review {a.project}")
+
+
+def cmd_review(a):
+    import asset_review
+    props = sa.open_proposals(a.project)
+    if not props:
+        sys.exit("no open proposal (studio-assets propose first)")
+    for path, _ in props:
+        prop = asset_review.serve(a.project, path, a.port, not a.no_browser)
+        if prop:
+            for need in prop["needs"]:
+                d = need["decision"]
+                v = f", vetoed {len(d.get('vetoed', []))}" if d.get("vetoed") else ""
+                print(f"{need['id']}: {'set ' + d['set'] if d.get('set') else 'none'}{v}"
+                      f"{' (' + d['reason'] + ')' if d.get('reason') else ''}")
+    print(f"style lock: {sa.style_of(a.project).get('lock')}. Next: studio-assets fetch {a.project}")
+
+
+def cmd_fetch(a):
+    got, failed = sa.fetch(sa.db(), a.project, a.res)
+    print(f"fetched {len(got)} assets into {pathlib.Path(a.project) / 'assets'}")
+    for aid, why in failed:
+        print(f"FAILED {aid}: {why}")
+    if got:
+        print(f"Next: studio-assets check {a.project} --fix")
+    sys.exit(1 if failed else 0)
+
+
+def expected(project):
+    """Per asset: the proposal item's size expectation (height_m [min, max]), origin rule and collision."""
+    out = {}
+    for _, need, it in sa.approved_items(project):
+        out[it["id"]] = {"height_m": it.get("height_m") or need.get("height_m"), "origin": it.get("origin", "bottom-centre"),
+                         "collision": "none" if it.get("decorative") else it.get("collision", need.get("collision", "convex"))}
+    return out
+
+
+def is_skinned(path):
+    """True for glTF/GLB files with skins or animations (rigged characters, animation sets)."""
+    import struct
+    raw = pathlib.Path(path).read_bytes()
+    if raw[:4] == b"glTF":
+        n = struct.unpack("<I", raw[12:16])[0]
+        doc = json.loads(raw[20:20 + n])
+    else:
+        doc = json.loads(raw)
+    return bool(doc.get("skins") or doc.get("animations"))
+
+
+def cmd_check(a):
+    proj, assets, manifest_p, _, _ = sa.project_paths(a.project)
+    manifest = sa.load_json(manifest_p, {"assets": {}})
+    exp = expected(a.project)
+    models = {}
+    for aid, rec in manifest["assets"].items():
+        for f in rec["files"]:
+            if f["path"].lower().endswith((".glb", ".gltf")):
+                models[str(proj / f["path"])] = (aid, f)
+    if not models:
+        print("no 3D models in the manifest")
+    problems, fixes, kept = [], {}, {}
+    with tempfile.TemporaryDirectory() as td:
+        meas = sa.blender_batch("measure", list(models), pathlib.Path(td) / "m.json") if models else {}
+    for path, (aid, f) in models.items():
+        m = meas.get(path, {"error": "not measured"})
+        rec = manifest["assets"][aid]
+        if "error" in m:
+            problems.append(f"{f['path']}: {m['error']}"); continue
+        rec["measured"] = m
+        e = exp.get(aid, {})
+        h = m["dims_m"][1]
+        spec = {}
+        if e.get("height_m") and not (e["height_m"][0] <= h <= e["height_m"][1]) and h > 0:
+            target = sum(e["height_m"]) / 2
+            spec["scale"] = round(target / h, 5)
+            problems.append(f"{f['path']}: height {h:.3f} m outside {e['height_m']} m -> scale x{spec['scale']}")
+        off = m["origin_offset_m"]
+        diag = max(sum(d * d for d in m["dims_m"]) ** 0.5, 1e-6)
+        if is_skinned(path):
+            # a Blender round trip shifts skinned meshes against their skeleton and drops embedded textures
+            # (DontPanicTrailer F7): rigged characters and animation files are never "fixed"; place them in the engine
+            if outside(off, m["dims_m"]):
+                kept[path] = (off, "skinned/animated")
+            continue
+        if max(abs(x) for x in off) > 0.02 * diag:
+            if e.get("origin", "bottom-centre") == "bottom-centre":
+                spec["origin"] = "bottom-centre"
+                problems.append(f"{f['path']}: origin is {off} m from the bottom centre -> move origin")
+            elif outside(off, m["dims_m"]):
+                kept[path] = (off, "origin: keep")
+        if spec:
+            fixes[path] = spec
+    if fixes and a.fix:
+        with tempfile.TemporaryDirectory() as td:
+            res = sa.blender_batch_fix(fixes, pathlib.Path(td) / "f.json")
+        for path, spec in fixes.items():
+            aid, f = models[path]
+            r = res.get(path, {"error": "not fixed"})
+            if "error" in r:
+                problems.append(f"{f['path']}: fix FAILED: {r['error']}"); continue
+            f["sha256"] = sa.sha256(path)
+            rec = manifest["assets"][aid]
+            rec.setdefault("fixes", []).append({"date": sa.TODAY(), **spec})
+            rec["measured"] = r
+        print(f"fixed {len(fixes)} models (generated Blender step; recorded under 'fixes' in ASSETS.json)")
+    if (proj / "project.godot").exists():
+        godot_collisions(proj, manifest, exp)
+        kept = {p: (off, kept[p][1] if p in kept else "measured in Godot")
+                for p, (off, _) in godot_measure(proj, models, manifest).items() if a.fix or p not in fixes}
+    sa.save_json(manifest_p, manifest)
+    # a kept origin is fine (a bent palm, a ball's centre) until it lies outside the mesh: then the model floats
+    # beside where it is placed (DontPanicIsland F17: the alien sat 2 m off its UFO)
+    for path, (off, why) in kept.items():
+        print(f"WARNING: {models[path][1]['path']}: the origin lies outside the mesh ({why}; bottom centre at {off} m "
+              f"from it): offset the instance by the negative (times its scale), or approve it with origin bottom-centre")
+    for p in problems:
+        print(("fixed: " if a.fix and "FAILED" not in p else "") + p)
+    print(f"{len(models)} models checked, {len(fixes)} need fixes{' (applied)' if a.fix and fixes else ''}")
+    if fixes and not a.fix:
+        print(f"Run: studio-assets check {a.project} --fix")
+
+
+def godot_collisions(proj, manifest, exp):
+    """Collisions on import: a post-import script adds a box or convex StaticBody3D per mesh, none for decorative."""
+    addon = proj / "addons/studio_assets"
+    addon.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(STUDIO / "lib/godot/studio_collision_import.gd", addon / "collision_import.gd")
+    script = "res://addons/studio_assets/collision_import.gd"
+    cmap = {}
+    for aid, rec in manifest["assets"].items():
+        for f in rec["files"]:
+            if not f["path"].lower().endswith((".glb", ".gltf")):
+                continue
+            cmap[f"res://{f['path']}"] = exp.get(aid, {}).get("collision") or ("none" if rec.get("decorative") else "convex")
+            imp = proj / (f["path"] + ".import")
+            text = imp.read_text() if imp.exists() else '[remap]\n\nimporter="scene"\nimporter_version=1\n\n[params]\n\n'
+            if "import_script/path=" in text:
+                text = re.sub(r'import_script/path="[^"]*"', f'import_script/path="{script}"', text)
+            else:
+                text = text.replace("[params]\n", f'[params]\n\nimport_script/path="{script}"\n', 1)
+            imp.write_text(text)
+    sa.save_json(proj / "assets/collision.json", cmap)
+    print(f"godot: collisions on import for {len(cmap)} models ({sum(v != 'none' for v in cmap.values())} with shapes); "
+          f"reimport with: godot --headless --path {proj} --import")
+
+
+def outside(off, dims, margin=0.05):
+    """True when the origin lies outside the mesh bounds (off: bottom centre minus origin, y up)."""
+    x, y, z = off
+    return (abs(x) > dims[0] / 2 + margin * dims[0] or abs(z) > dims[2] / 2 + margin * dims[2]
+            or y > margin * dims[1] or y < -(1 + margin) * dims[1])
+
+
+def godot_measure(proj, models, manifest):
+    """Measure every model in Godot, instanced as the game loads it (lib/godot/studio_measure.gd, after an import).
+    Stored as 'measured_godot'; returns the off-origin models ({path: (offset, why)}), Godot's view being the truth."""
+    godot = os.environ.get("GODOT_BIN", "godot")
+    subprocess.run([godot, "--headless", "--path", str(proj), "--import"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    res = {f"res://{f['path']}": path for path, (_, f) in models.items()}
+    with tempfile.TemporaryDirectory() as td:
+        inp, out = pathlib.Path(td) / "in.json", pathlib.Path(td) / "out.json"
+        inp.write_text(json.dumps(list(res)))
+        subprocess.run([godot, "--headless", "--path", str(proj), "-s", str(STUDIO / "lib/godot/studio_measure.gd"),
+                        "--", str(inp), str(out)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        meas = json.loads(out.read_text()) if out.exists() else {}
+    off_origin = {}
+    for rp, path in res.items():
+        aid, f = models[path]
+        m = meas.get(rp, {"error": "not measured in Godot"})
+        if "error" in m:
+            print(f"godot: {f['path']}: {m['error']}"); continue
+        manifest["assets"][aid]["measured_godot"] = m
+        off, dims = m["origin_offset_m"], m["dims_m"]
+        if outside(off, dims):
+            off_origin[path] = (off, "measured in Godot")
+    print(f"godot: measured {len(meas)} models as instanced, {len(off_origin)} with the origin outside the mesh")
+    return off_origin
+
+
+def cmd_taste(a):
+    for t in sa.taste()[-a.n:]:
+        print(f"{t['date']} {t['project']}/{t['need']} set {t['set']} [{t.get('style')}]: {t['decision']}"
+              f"{' vetoed ' + str(len(t['vetoed'])) if t.get('vetoed') else ''}{' - ' + t['reason'] if t.get('reason') else ''}")
+
+
+def cmd_style(a):
+    st = sa.style_of(a.project)
+    if a.lock:
+        st["lock"] = a.lock
+    if a.unlock:
+        st["lock"] = None
+    if a.res:
+        st["resolution"] = a.res
+    if a.allow is not None:
+        st["allow"] = a.allow
+    if a.lock or a.unlock or a.res or a.allow is not None:
+        sa.save_json(sa.project_paths(a.project)[4], st)
+    print(json.dumps(st))
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("sync"); p.add_argument("sources", nargs="*")
+    p.add_argument("--no-thumbs", action="store_true")
+    p = sub.add_parser("search"); p.add_argument("query", nargs="*")
+    for o in ("--kind", "--source", "--style", "--pack"):
+        p.add_argument(o)
+    p.add_argument("-n", type=int, default=40); p.add_argument("--json", action="store_true")
+    p = sub.add_parser("show"); p.add_argument("id")
+    sub.add_parser("stats")
+    p = sub.add_parser("propose"); p.add_argument("project"); p.add_argument("file")
+    p = sub.add_parser("review"); p.add_argument("project"); p.add_argument("--port", type=int, default=0)
+    p.add_argument("--no-browser", action="store_true")
+    p = sub.add_parser("fetch"); p.add_argument("project"); p.add_argument("--res", choices=sa.RES)
+    p = sub.add_parser("check"); p.add_argument("project"); p.add_argument("--fix", action="store_true")
+    p = sub.add_parser("taste"); p.add_argument("-n", type=int, default=30)
+    p = sub.add_parser("style"); p.add_argument("project"); p.add_argument("--lock"); p.add_argument("--unlock", action="store_true")
+    p.add_argument("--allow", nargs="*"); p.add_argument("--res", choices=sa.RES)
+    a = ap.parse_args()
+    if a.cmd == "sync":
+        bad = [s for s in a.sources if s not in sa.SOURCES]
+        if bad:
+            sys.exit(f"unknown source(s) {bad}; known: {', '.join(sa.SOURCES)}")
+    globals()["cmd_" + a.cmd](a)
+
+
+if __name__ == "__main__":
+    main()

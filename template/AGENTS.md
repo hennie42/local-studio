@@ -8,6 +8,16 @@ Blender or GPU tools directly; ask the studio broker with the `studio` command i
 `studio help` lists the actions. Every job writes its full log to `.studio/logs/` and prints a
 filtered summary (errors + script output). Read the full log only when the summary isn't enough.
 
+**Working rules (from the retros: retros/*/findings.jsonl):**
+- **Never stop to ask.** Write the code, run the step's check yourself, fix and re-run until it passes; a step that
+  ends with a question instead of a passing check has failed (DontPanicTrailer F4).
+- **Environment variables do not reach Unreal or Blender through `studio`.** Pass options as files (e.g. a flag file
+  in `data/`) or constants in the script (F4).
+- **Probe scripts go in `.studio/scratch/`** and are deleted before you finish; never leave `check_*.py` /
+  `probe_*.py` files in `Scripts/` (F5). Probe once with `dir()` / `get_editor_property` before guessing API names.
+- **Import models with `su.import_file`**: one combined mesh per file (Interchange otherwise makes one mesh per
+  glTF node), saved, skeletal materials usable in renders (F1, F7).
+
 | Need | Command |
 |---|---|
 | Run an Unreal Python script (headless, no GPU) | `studio ue-python <X>.uproject Scripts/<script>.py` |
@@ -77,6 +87,12 @@ cut.set_camera_binding_id(seq.get_binding_id(camera_binding))
   Set a fixed `cine_camera_component.set_editor_property("current_focal_length", 28.0)` instead.
 
 ## Rendering (Movie Render Queue)
+- Use `su.post_process(...)` (or switch "apply physical camera exposure" off yourself): manual exposure with the
+  camera's f-stop applied renders black under a normal sun (DontPanicTrailer F2).
+- No Water plugin bodies in headless renders: they render nothing. Make the sea a plane with a shader (F3).
+- Rendering a sequence in chunks: start each chunk one frame before its first frame. The first rendered frame takes
+  its temporal samples from before the start, so a chunk that starts on a camera cut ghosts the previous shot into
+  it. Hide one-shot props on the cut frame itself, not one frame later. Check with `studio-cutcheck` (F11).
 Create the render config with Python, writing output **inside the project** using `{project_dir}`:
 ```python
 cfg = tools.create_asset("RenderPreview", "/Game/Render", unreal.MoviePipelinePrimaryConfig,

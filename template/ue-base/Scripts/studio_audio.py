@@ -52,7 +52,13 @@ def progression(text, octave=3):
 
 
 def bars(n, bpm, beats_per_bar=4):
+    """Seconds for n BARS (not beats: one bar = beats_per_bar beats). For beats use beats()."""
     return n * beats_per_bar * 60.0 / bpm
+
+
+def beats(n, bpm):
+    """Seconds for n BEATS. (Passing beat counts to bars() put every hit 4x too far apart: a retro finding.)"""
+    return n * 60.0 / bpm
 
 
 def beat_times(seconds, bpm, offset=0.0, subdivision=1):
@@ -208,3 +214,34 @@ class Timeline:
             else:
                 raise ValueError("only 16-bit output is supported")
         print(f"STUDIO_AUDIO wrote {path}: {dur:.2f}s stereo {SR} Hz, peak {peak_db} dBFS")
+
+
+# ------------------------------------------------------------------ checks
+def check_loop(path, bpm, beats_per_bar=4, band=(35.0, 140.0)):
+    """Measure a music loop: the kick/bass onsets should sit on the beat grid, the seam (end -> start) should be
+    smooth. Prints and returns a dict; use it as a check, not only your ears (retros: a loop with 7 kicks in 35 s
+    passed unnoticed until a playtest).
+      grid_error_ms: median distance of onsets in the low band to the nearest beat
+      onsets_per_bar: low-band onsets per bar (a 4/4 groove with kicks on 1 and 3 gives ~2+)
+      seam_jump: sample difference across the loop point (0 = seamless)"""
+    with wave.open(str(path)) as w:
+        n, sr, ch = w.getnframes(), w.getframerate(), w.getnchannels()
+        x = np.frombuffer(w.readframes(n), dtype=np.int16).reshape(-1, ch)[:, 0].astype(float) / 32768.0
+    spec = np.fft.rfft(x)
+    f = np.fft.rfftfreq(len(x), 1.0 / sr)
+    spec[(f < band[0]) | (f > band[1])] = 0
+    lo = np.fft.irfft(spec, len(x))
+    hop = int(sr * 0.01)
+    e = np.array([np.sum(lo[i:i + hop] ** 2) for i in range(0, len(lo) - hop, hop)])
+    th = e.max() * 0.25 if e.size else 0
+    onsets = np.array([i for i in range(1, len(e)) if e[i] > th and e[i - 1] <= th]) * 0.01
+    beat = 60.0 / bpm
+    err = np.abs(onsets / beat - np.round(onsets / beat)) * beat * 1000 if onsets.size else np.array([1e9])
+    seconds = len(x) / sr
+    out = {"seconds": round(seconds, 2), "onsets": int(onsets.size),
+           "onsets_per_bar": round(onsets.size / (seconds / (beat * beats_per_bar)), 2),
+           "grid_error_ms": round(float(np.median(err)), 1), "seam_jump": round(float(abs(x[0] - x[-1])), 4)}
+    ok = out["grid_error_ms"] < 25 and out["onsets_per_bar"] >= 1.5 and out["seam_jump"] < 0.05
+    print(("LOOP OK " if ok else "LOOP CHECK FAILED ") + str(out))
+    out["ok"] = ok
+    return out

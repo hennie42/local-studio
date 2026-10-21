@@ -1,73 +1,81 @@
 {
-  "_source": "capability suites 2026-10-15 (evals/scorecard-20261015.md: Gemma 4 vs Qwen3.6 on the same tooling) and 2026-10-07/08 (evals/scorecard-20261008.md), Godot suite 2026-10-14 (evals/scorecard-godot-20261014.md) on the reference machine: RTX 5070 Ti 16 GB + RTX 2060 6 GB, 64 GB RAM",
+ "_source": "capability suites 2026-10-15 (evals/scorecard-20261015.md: Gemma 4 vs Qwen3.6 on the same tooling) and 2026-10-07/08 (evals/scorecard-20261008.md), Godot suite 2026-10-14 (evals/scorecard-godot-20261014.md) on the reference machine: RTX 5070 Ti 16 GB + RTX 2060 6 GB, 64 GB RAM",
+ "worker": {
+  "model": "gemma4-26b-a4b",
+  "agent": "claude",
+  "why": "capability suite 2026-10-15, 2 runs per task: 19/20 agent runs passed (mean 0.995; Qwen3.6 on the same tooling 16/20) across coding, UE Python/C++/render, Blender, ffmpeg, audio; 57 min total vs 80, 172 turns vs 401, peak context 45K of 131K; also the Godot worker (8/8), so one model for all agent work and no reloads"
+ },
+ "retry": {
+  "model": "bonsai2-27b",
+  "agent": "claude",
+  "why": "a different model family from the worker (a retry shouldn't repeat the first attempt's blind spot); 19/20 in the 2026-10-08 suite, 8/8 Godot, best-looking renders by eye; ~3x slower"
+ },
+ "long_context": {
+  "model": "bonsai2-27b",
+  "why": "3/3 recall at 24K/106K/188K, prefill ~900 tok/s; use for reading huge logs or files beyond ~100K tokens"
+ },
+ "log_triage_fast": {
+  "model": "spark-4b",
+  "why": "0.56-0.75 triage score (varies run to run) in ~20 s on the small second GPU; first pass only, Claude confirms. Gemma 4 E4B scores 0.69 but takes ~90 s (2026-10-15)"
+ },
+ "vision_prescreen": {
+  "model": "gemma4-26b-a4b",
+  "why": "synthetic frames 2026-10-15: exposure 20/20 twice, defects 8/8 twice (Qwen3.6: 0.93 / 1.00). Pre-screen only: Claude makes the call"
+ },
+ "small_model": "spark-4b",
+ "never_delegate_to_small_models": [
+  "multi-step tool work",
+  "Blender",
+  "ffmpeg pipelines",
+  "Unreal"
+ ],
+ "harness": {
+  "use": "claude",
+  "why": "Claude Code worker: 19/20 per model; OpenCode with the same Bonsai: 7/10, slower, more context"
+ },
+ "gpu_policy": {
+  "mode": "timeshare",
+  "why": "agent context needs 20-112K (too much for the 32K co-resident mode); one worker model for everything avoids reloads; a reload takes ~4-5 s (warm page cache) plus re-reading the worker's context",
+  "render_1080p_8spp_150f_s": 34.5,
+  "small_gpu_can_render_ue": false
+ },
+ "claude_only": [
+  "brief, plan, shot design, final creative calls",
+  "visual QA verdicts (local vision is pre-screen only)",
+  "musical tempo/structure review (graders can't check tempo reliably)"
+ ],
+ "godot": {
   "worker": {
-    "model": "gemma4-26b-a4b",
-    "agent": "claude",
-    "why": "capability suite 2026-10-15, 2 runs per task: 19/20 agent runs passed (mean 0.995; Qwen3.6 on the same tooling 16/20) across coding, UE Python/C++/render, Blender, ffmpeg, audio; 57 min total vs 80, 172 turns vs 401, peak context 45K of 131K; also the Godot worker (8/8), so one model for all agent work and no reloads"
+   "model": "gemma4-26b-a4b",
+   "agent": "claude",
+   "why": "Godot suite 2026-10-14/15, 2 runs per task: 8/8 passed, ~31 min per 4 tasks (fastest, fewest turns/context): port 3->4, race logic 21/21, platformer + exports, Movie Maker clip"
   },
   "retry": {
-    "model": "bonsai2-27b",
-    "agent": "claude",
-    "why": "a different model family from the worker (a retry shouldn't repeat the first attempt's blind spot); 19/20 in the 2026-10-08 suite, 8/8 Godot, best-looking renders by eye; ~3x slower"
+   "model": "bonsai2-27b",
+   "agent": "claude",
+   "why": "also 8/8 (~91 min per 4 tasks, ~3x slower) and the best-looking clips by eye: retries and look-critical steps"
   },
-  "long_context": {
-    "model": "bonsai2-27b",
-    "why": "3/3 recall at 24K/106K/188K, prefill ~900 tok/s; use for reading huge logs or files beyond ~100K tokens"
+  "not_recommended": {
+   "qwen3.6-35b-a3b": "4/8 over 2 runs (rep 2: 3/4 after the tooling fixes): fails the platformer (autopilot timing + time limit)",
+   "mellum2.1-12b": "0/4: loses the task inside Claude Code's long system prompt (12B too small for this harness)",
+   "qwen3.8-27b-q3": "1/4: limited by the 49K context that fits in 16 GB (template fixed)"
   },
-  "log_triage_fast": {
-    "model": "spark-4b",
-    "why": "0.56-0.75 triage score (varies run to run) in ~20 s on the small second GPU; first pass only, Claude confirms. Gemma 4 E4B scores 0.69 but takes ~90 s (2026-10-15)"
-  },
-  "vision_prescreen": {
-    "model": "gemma4-26b-a4b",
-    "why": "synthetic frames 2026-10-15: exposure 20/20 twice, defects 8/8 twice (Qwen3.6: 0.93 / 1.00). Pre-screen only: Claude makes the call"
-  },
-  "small_model": "spark-4b",
-  "never_delegate_to_small_models": [
-    "multi-step tool work",
-    "Blender",
-    "ffmpeg pipelines",
-    "Unreal"
-  ],
-  "harness": {
-    "use": "claude",
-    "why": "Claude Code worker: 19/20 per model; OpenCode with the same Bonsai: 7/10, slower, more context"
-  },
-  "gpu_policy": {
-    "mode": "timeshare",
-    "why": "agent context needs 20-112K (too much for the 32K co-resident mode); one worker model for everything avoids reloads; a reload takes ~4-5 s (warm page cache) plus re-reading the worker's context",
-    "render_1080p_8spp_150f_s": 34.5,
-    "small_gpu_can_render_ue": false
-  },
-  "claude_only": [
-    "brief, plan, shot design, final creative calls",
-    "visual QA verdicts (local vision is pre-screen only)",
-    "musical tempo/structure review (graders can't check tempo reliably)"
-  ],
-  "godot": {
-    "worker": {
-      "model": "gemma4-26b-a4b",
-      "agent": "claude",
-      "why": "Godot suite 2026-10-14/15, 2 runs per task: 8/8 passed, ~31 min per 4 tasks (fastest, fewest turns/context): port 3->4, race logic 21/21, platformer + exports, Movie Maker clip"
-    },
-    "retry": {
-      "model": "bonsai2-27b",
-      "agent": "claude",
-      "why": "also 8/8 (~91 min per 4 tasks, ~3x slower) and the best-looking clips by eye: retries and look-critical steps"
-    },
-    "not_recommended": {
-      "qwen3.6-35b-a3b": "4/8 over 2 runs (rep 2: 3/4 after the tooling fixes): fails the platformer (autopilot timing + time limit)",
-      "mellum2.1-12b": "0/4: loses the task inside Claude Code's long system prompt (12B too small for this harness)",
-      "qwen3.8-27b-q3": "1/4: limited by the 49K context that fits in 16 GB (template fixed)"
-    },
-    "scorecard": "evals/scorecard-godot-20261014.md"
-  },
-  "log_triage": {
-    "model": "bonsai2-27b",
-    "why": "UE log triage 0.88 (2026-10-08); Qwen3.6 0.75, Gemma 4 0.50 (2026-10-15). Claude confirms"
-  },
-  "fallback_worker": {
-    "model": "qwen3.6-35b-a3b",
-    "why": "16/20 on the 2026-10-15 suite (missed a key signature, a light, wrote a C++ test with 0 asserts); fastest tokens (77 tok/s) but 2.3x the turns"
+  "scorecard": "evals/scorecard-godot-20261014.md",
+  "attempts": {
+   "order": [
+    "first:worker",
+    "retry:retry",
+    "followup:retry"
+   ],
+   "why": "2026-10-18 pilot (DontPanicIsland, 14 tickets): Gemma first tries 11/14 (median 20 min); on the 3 failures Gemma's follow-up went 0/3 (all hit the 40-min limit, ~2 h lost) and Bonsai's fresh retry 3/3. Small sample: revisit as tickets accumulate (studio-dispatch logs every attempt)."
   }
+ },
+ "log_triage": {
+  "model": "bonsai2-27b",
+  "why": "UE log triage 0.88 (2026-10-08); Qwen3.6 0.75, Gemma 4 0.50 (2026-10-15). Claude confirms"
+ },
+ "fallback_worker": {
+  "model": "qwen3.6-35b-a3b",
+  "why": "16/20 on the 2026-10-15 suite (missed a key signature, a light, wrote a C++ test with 0 asserts); fastest tokens (77 tok/s) but 2.3x the turns"
+ }
 }

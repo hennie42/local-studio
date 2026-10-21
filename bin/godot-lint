@@ -2,9 +2,11 @@
 """godot-lint [paths...]   (default: the current directory)
 
 Flags Godot 3 idioms in Godot 4 projects (.gd scripts and .tscn/.tres files): the main failure mode of LLM-written
-GDScript. Prints `file:line: [rule] message -> fix` and exits 1 if anything was found. Godot's own parser stops at the
+GDScript. Also flags Godot 4 pitfalls that compile but misbehave (anchor-grow, fullrect-mouse, null-cast,
+label3d-theme; from the Don't Panic Island retro). Prints `file:line: [rule] message -> fix` and exits 1 if anything was found. Godot's own parser stops at the
 first error per file; this lists all of them. Run before every scene run (studio godot-check does both).
 """
+import os
 import pathlib
 import re
 import sys
@@ -121,6 +123,55 @@ def lint_gd(path, text):
                     re.search(re.escape(name) + r"\s*\.new\s*\(", code):
                 hits.append((n, "renamed-class", f"`{name}` does not exist in Godot 4 -> `{RENAMED[name]}`"))
                 break
+    return hits + lint_pitfalls(text.splitlines())
+
+
+# Godot 4 pitfalls that compile but misbehave (retros/DontPanicIsland/findings.jsonl): each cost a playtest round
+NOT_TOP_LEFT = re.compile(r"(\w[\w.]*)\.set_anchors(?:_and_offsets)?_preset\(\s*Control\.PRESET_([A-Z_]+)\s*\)")
+TOP_LEFT_PRESETS = {"TOP_LEFT", "TOP_WIDE", "LEFT_WIDE", "FULL_RECT"}
+PITFALL_RULES = {"anchor-grow", "fullrect-mouse", "null-cast", "label3d-theme"}
+# fatal since 2026-10-18 (all projects clean); GODOT_LINT_PITFALLS_FATAL=0 turns them into warnings, e.g. while a
+# worker run is in progress and a new rule would trip it on files outside its ticket
+PITFALLS_FATAL = os.environ.get("GODOT_LINT_PITFALLS_FATAL", "1") == "1"
+VALUE_TYPES = r"(Vector2i|Vector2|Vector3i|Vector3|Vector4|int|float|bool|Color|Rect2|Rect2i|Basis|Transform2D|Transform3D)"
+
+
+def lint_pitfalls(lines):
+    hits = []
+    code = [strip_code(l) for l in lines]
+    label3d = set()
+    for n, c in enumerate(code):
+        for m in re.finditer(r"\bvar\s+(\w+)\s*(?::\s*Label3D\b|:?=\s*Label3D\.new\(\))", c):
+            label3d.add(m.group(1))
+    for n, c in enumerate(code):
+        ln = n + 1
+        m = NOT_TOP_LEFT.search(c)
+        if m:
+            var, preset = m.group(1), m.group(2)
+            after = "\n".join(code[n + 1:n + 10])
+            if preset not in TOP_LEFT_PRESETS and not re.search(re.escape(var) + r"\.grow_(horizontal|vertical)\b", after):
+                side = "bottom" if "BOTTOM" in preset else ("right" if "RIGHT" in preset else "centre")
+                fix = {"bottom": "grow_vertical = Control.GROW_DIRECTION_BEGIN", "right":
+                       "grow_horizontal = Control.GROW_DIRECTION_BEGIN"}.get(side, "grow_horizontal and grow_vertical = Control.GROW_DIRECTION_BOTH")
+                hits.append((ln, "anchor-grow", f"`{var}` is anchored to the {side} ({preset}) but grows from its "
+                             f"top-left by default, so it hangs off the anchor{' (below the window)' if side == 'bottom' else ''} -> set "
+                             f"`{var}.{fix}` right after"))
+            if preset == "FULL_RECT" and not re.search(re.escape(var) + r"\.mouse_filter\b", "\n".join(code)):
+                hits.append((ln, "fullrect-mouse", f"full-screen `{var}` catches every click (mouse_filter defaults to "
+                             f"STOP) -> `{var}.mouse_filter = Control.MOUSE_FILTER_IGNORE` (or set STOP on purpose for a "
+                             f"modal)"))
+        m = re.search(r"\bvar\s+(\w+)\s*(?::\s*\w+)?\s*:?=.*\bas\s+" + VALUE_TYPES + r"\b", c)
+        if m:
+            var = m.group(1)
+            if re.search(r"\b" + re.escape(var) + r"\s*[!=]=\s*null\b", "\n".join(code[n + 1:n + 4])):
+                hits.append((ln, "null-cast", f"`{var}` is cast to the value type {m.group(2)}, which can never be null "
+                             f"(and `null as {m.group(2)}` is an error) -> keep the Variant, test it for null, then "
+                             f"convert: `var hit: Variant = ...; if hit == null: return; var {var}: {m.group(2)} = hit`"))
+        for var in label3d:
+            if re.search(r"\b" + re.escape(var) + r"\.add_theme_\w+_override\s*\(", c):
+                hits.append((ln, "label3d-theme", f"`{var}` is a Label3D: add_theme_*_override is Control-only (a "
+                             f"runtime error) -> set its properties: font, font_size, modulate, outline_modulate, "
+                             f"outline_size"))
     return hits
 
 
@@ -145,14 +196,17 @@ def main():
         else:
             files += [p for p in r.rglob("*") if p.suffix in (".gd", ".tscn", ".tres")
                       and not ({".godot", "godot-api", "godot-ref", "addons", ".studio"} & set(p.parts))]
-    total = 0
+    total = warned = 0
     for f in sorted(files):
         text = f.read_text(errors="replace")
         hits = lint_gd(f, text) if f.suffix == ".gd" else lint_scene(f, text)
         for n, rule, msg in hits:
-            print(f"{f}:{n}: [{rule}] {msg}")
-        total += len(hits)
-    print(f"godot-lint: {len(files)} file(s), {total} Godot 3 idiom(s)" + (" - fix them" if total else " - clean"))
+            soft = rule in PITFALL_RULES and not PITFALLS_FATAL
+            print(f"{f}:{n}: [{rule}]{' warning:' if soft else ''} {msg}")
+            warned += soft
+            total += not soft
+    print(f"godot-lint: {len(files)} file(s), {total} problem(s)" + (f", {warned} warning(s)" if warned else "")
+          + (" - fix them" if total or warned else " - clean"))
     sys.exit(1 if total else 0)
 
 

@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""studio-serve: serve a Godot project's web export to phones and tablets in the home network, over HTTPS.
+
+  studio-serve <project> [--port 8766] [game args...]      e.g. studio-serve DontPanicIsland --pixel-probe
+
+Godot's web builds need a secure context (https or localhost), so a phone can't use plain http on the LAN.
+This makes a self-signed certificate for the machine's LAN address once (~/.config/studio/serve-cert/, the phone
+warns once: "Advanced -> proceed"), injects a console hook (every console line of the page is appended to
+<project>/.studio/web-console.log, so phone-side errors and GAME_ markers come back) and the game args, and serves
+<project>/build/web until Ctrl+C. The firewall must allow the port from the LAN (ufw: the user's rule).
+There is no password: stop it when the test is done.
+"""
+import argparse
+import functools
+import http.server
+import json
+import pathlib
+import socket
+import ssl
+import subprocess
+import sys
+import time
+
+CERT_DIR = pathlib.Path.home() / ".config/studio/serve-cert"
+HOOK = """<script>(function(){for(const k of ['log','warn','error']){const o=console[k];console[k]=function(...a){
+try{navigator.sendBeacon('/__log',k+': '+a.join(' '))}catch(e){};o.apply(console,a)}}
+window.addEventListener('error',e=>navigator.sendBeacon('/__log','pageerror: '+e.message));
+navigator.sendBeacon('/__log','ua: '+navigator.userAgent+' screen '+screen.width+'x'+screen.height+' dpr '+devicePixelRatio);})();</script>"""
+
+
+def lan_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("10.255.255.255", 1))   # no packet is sent: picks the interface a LAN route would use
+        return s.getsockname()[0]
+    finally:
+        s.close()
+
+
+def cert_for(ip):
+    CERT_DIR.mkdir(parents=True, exist_ok=True)
+    crt, key = CERT_DIR / f"{ip}.pem", CERT_DIR / f"{ip}.key"
+    if not crt.exists():
+        subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", str(key), "-out",
+                        str(crt), "-days", "365", "-subj", f"/CN={ip}", "-addext", f"subjectAltName=IP:{ip}"],
+                       check=True, capture_output=True)
+    return crt, key
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("project")
+    ap.add_argument("--port", type=int, default=8766)
+    a, game_args = ap.parse_known_args()
+    proj = pathlib.Path(a.project)
+    if not proj.is_absolute() and not proj.exists():
+        proj = pathlib.Path("/home/user/StudioProjects/godot") / proj
+    site = proj.resolve() / "build/web"
+    if not (site / "index.html").exists():
+        sys.exit(f"no web export at {site} (in the project: studio godot-export web)")
+    ip = lan_ip()
+    crt, key = cert_for(ip)
+    log = open(proj / ".studio/web-console.log", "a", buffering=1)
+
+    class H(http.server.SimpleHTTPRequestHandler):
+        def log_message(s, *x):
+            pass
+
+        def do_POST(s):
+            n = int(s.headers.get("content-length", 0))
+            log.write(time.strftime("%H:%M:%S ") + s.rfile.read(n).decode(errors="replace") + "\n")
+            s.send_response(204)
+            s.end_headers()
+
+        def do_GET(s):
+            if s.path.split("?")[0] in ("/", "/index.html"):
+                html = (site / "index.html").read_text().replace("<head>", "<head>" + HOOK, 1)
+                if game_args:
+                    html = html.replace('"args":[]', '"args":' + json.dumps(["--", *game_args]), 1)
+                b = html.encode()
+                s.send_response(200)
+                s.send_header("content-type", "text/html")
+                s.send_header("content-length", str(len(b)))
+                s.send_header("cache-control", "no-store")
+                s.end_headers()
+                s.wfile.write(b)
+                return
+            super().do_GET()
+
+    srv = http.server.ThreadingHTTPServer(("0.0.0.0", a.port), functools.partial(H, directory=str(site)))
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(str(crt), str(key))
+    srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
+    print(f"studio-serve: https://{ip}:{a.port}/  (console -> {proj}/.studio/web-console.log; Ctrl+C stops)",
+          flush=True)
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        pass
+
+
+if __name__ == "__main__":
+    main()

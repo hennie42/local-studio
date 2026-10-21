@@ -10,7 +10,11 @@ rc=0
 "$here/bin/godot-lint" . || rc=1
 mkdir -p .studio
 cp "$here/lib/godot_check_scripts.gd" .studio/check_scripts.gd
-[[ -d .godot ]] || "$GODOT" --headless --path . --import >/dev/null 2>&1
+# refresh the global class cache when scripts changed: a new `class_name` is unknown to other scripts until a scan
+cache=.godot/global_script_class_cache.cfg
+if [[ ! -f $cache ]] || [[ -n $(find . -name '*.gd' -newer "$cache" -not -path './.godot/*' -not -path './godot-ref/*' -not -path './.studio/*' -print -quit) ]]; then
+  "$GODOT" --headless --path . --import >/dev/null 2>&1
+fi
 out=$(timeout 300 "$GODOT" --headless --path . --script res://.studio/check_scripts.gd 2>&1)
 code=$?
 # error line + its "at: res://file:LINE" location, de-duplicated (Godot prints each error twice: load + reload)

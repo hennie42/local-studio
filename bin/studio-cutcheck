@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""studio-cutcheck: find broken frames at the cuts of a rendered sequence (ghosting, a prop that lingers one frame,
+camera-cut motion blur). DontPanicTrailer F11: chunked final renders ghosted the previous shot into the first frame
+of every chunk, and a contact sheet did not show it.
+
+  studio-cutcheck <frames_dir> <cut_frame> [<cut_frame> ...]      e.g. studio-cutcheck Renders/final60_169 96 144 264
+  studio-cutcheck <frames_dir> --edit data/edit_60.json            (cuts = every shot's start but the first)
+
+A cut frame s is suspect when it differs from frame s+1 much more than s+1 differs from s+2 (the shot itself moves
+slowly, a broken first frame does not belong to it): |f(s) - f(s+1)| > 3 |f(s+1) - f(s+2)| + 2 (grey levels, at
+240 px wide). Frames are found by their 4-digit number before .png. Exit 1 if any cut is suspect.
+"""
+import json
+import os
+import re
+import sys
+
+import numpy as np
+from PIL import Image
+
+
+def frames(folder):
+    out = {}
+    for n in os.listdir(folder):
+        m = re.search(r"(\d{4})\.png$", n)
+        if m:
+            out[int(m.group(1))] = os.path.join(folder, n)
+    return out
+
+
+def grey(path):
+    im = Image.open(path).convert("L")
+    w, h = im.size
+    return np.asarray(im.resize((240, max(1, round(240 * h / w)))), dtype=float)
+
+
+def main():
+    if len(sys.argv) < 3:
+        sys.exit(__doc__)
+    folder = sys.argv[1]
+    if sys.argv[2] == "--edit":
+        cuts = [s["start"] for s in json.load(open(sys.argv[3]))["shots"][1:]]
+    else:
+        cuts = [int(a) for a in sys.argv[2:]]
+    F = frames(folder)
+    bad = []
+    for s in cuts:
+        if not all(k in F for k in (s, s + 1, s + 2)):
+            print(f"cut {s}: frames missing")
+            bad.append(s)
+            continue
+        a, b, c = grey(F[s]), grey(F[s + 1]), grey(F[s + 2])
+        d1, d2 = np.abs(a - b).mean(), np.abs(b - c).mean()
+        flag = d1 > 3 * d2 + 2
+        print(f"cut {s}: {d1:.1f} vs {d2:.1f}{'  SUSPECT' if flag else ''}")
+        if flag:
+            bad.append(s)
+    print(f"CUTCHECK {'FAIL ' + str(bad) if bad else 'OK'} ({len(cuts)} cuts)")
+    sys.exit(1 if bad else 0)
+
+
+if __name__ == "__main__":
+    main()

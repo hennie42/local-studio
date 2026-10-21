@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+"""godot-web-smoke: run a project's web export headless in Firefox and report its GAME_ markers and errors.
+
+  godot-web-smoke <project> [--timeout S] [--want "START END FINISH"] [game args...]
+  e.g. godot-web-smoke /home/user/StudioProjects/godot/DontPanicIsland --want "START END FINISH" --autopilot --skip-intro
+
+Serves <project>/build/web on localhost with two injections into index.html: a console hook (every console line
+is POSTed back to the server) and the game args (GODOT_CONFIG "args", after "--" so they reach
+OS.get_cmdline_user_args). Stops at GAME_QUIT or the timeout. Exit 0 when every wanted marker appeared and no page
+error happened before GAME_QUIT (Godot's web audio throws one during teardown after quitting: ignored).
+"""
+import argparse
+import http.server
+import json
+import pathlib
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+
+HOOK = """<script>(function(){for(const k of ['log','warn','error']){const o=console[k];console[k]=function(...a){
+try{navigator.sendBeacon('/log',k+': '+a.join(' '))}catch(e){};o.apply(console,a)}}
+window.addEventListener('error',e=>navigator.sendBeacon('/log','pageerror: '+e.message));})();</script>"""
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("project")
+    ap.add_argument("--timeout", type=float, default=150)
+    ap.add_argument("--want", default="START", help="space-separated markers that must appear (as GAME_<M>)")
+    ap.add_argument("--ff-pref", action="append", default=[], metavar="KEY=VALUE",
+                    help="a Firefox pref for this run, e.g. webgl.disable-extensions=true (imitates weak mobile WebGL)")
+    a, game_args = ap.parse_known_args()
+    root = pathlib.Path(a.project).resolve() / "build/web"
+    if not (root / "index.html").exists():
+        sys.exit(f"no web export at {root} (run in the project: studio godot-export web)")
+    if not shutil.which("firefox"):
+        sys.exit("firefox not found")
+    lines = []
+
+    class H(http.server.SimpleHTTPRequestHandler):
+        def __init__(s, *x, **k):
+            super().__init__(*x, directory=str(root), **k)
+
+        def log_message(s, *x):
+            pass
+
+        def do_POST(s):
+            n = int(s.headers.get("content-length", 0))
+            lines.append(s.rfile.read(n).decode(errors="replace"))
+            s.send_response(204)
+            s.end_headers()
+
+        def do_GET(s):
+            if s.path in ("/", "/index.html"):
+                html = (root / "index.html").read_text()
+                html = html.replace("<head>", "<head>" + HOOK, 1)
+                html = html.replace('"args":[]', '"args":' + json.dumps(["--", *game_args] if game_args else []), 1)
+                b = html.encode()
+                s.send_response(200)
+                s.send_header("content-type", "text/html")
+                s.send_header("content-length", str(len(b)))
+                s.end_headers()
+                s.wfile.write(b)
+                return
+            super().do_GET()
+
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    url = f"http://127.0.0.1:{srv.server_address[1]}/"
+    with tempfile.TemporaryDirectory(prefix="web-smoke-") as prof:
+        with open(pathlib.Path(prof) / "user.js", "w") as f:
+            for kv in a.ff_pref:
+                k, _, v = kv.partition("=")
+                val = v if v in ("true", "false") or v.lstrip("-").isdigit() else json.dumps(v)
+                f.write(f'user_pref("{k}", {val});\n')
+        ff = subprocess.Popen(["firefox", "--headless", "--no-remote", "--profile", prof, "--window-size", "1280,720",
+                               url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        t0 = time.time()
+        while time.time() - t0 < a.timeout and not any("GAME_QUIT" in l for l in lines):
+            time.sleep(0.5)
+        time.sleep(1.0)
+        ff.terminate()
+        try:
+            ff.wait(10)
+        except subprocess.TimeoutExpired:
+            ff.kill()
+    srv.shutdown()
+    quit_at = next((i for i, l in enumerate(lines) if "GAME_QUIT" in l), len(lines))
+    errors = [l for l in lines[:quit_at] if l.startswith("pageerror") or "SCRIPT ERROR" in l or l.startswith("error")]
+    for l in lines:
+        if "GAME_MOVE" not in l and "GAME_SFX" not in l:
+            print(l)
+    print(f"moves: {sum('GAME_MOVE' in l for l in lines)}")
+    missing = [m for m in a.want.split() if not any(f"GAME_{m}" in l for l in lines)]
+    for m in missing:
+        print(f"WEB SMOKE FAILED: missing GAME_{m}")
+    for e in errors:
+        print(f"WEB SMOKE FAILED: {e}")
+    if not missing and not errors:
+        print("WEB SMOKE OK")
+    sys.exit(1 if missing or errors else 0)
+
+
+if __name__ == "__main__":
+    main()

@@ -41,7 +41,9 @@ The director turns the brief into `PLAN.md`: small steps ("tickets"), each with
 - the exact files it touches and the tested helpers to use (workers are weak at spatial maths: prescribe
   `su.wall_panel`, `su.face_point`, cookbook recipes instead of letting them derive geometry);
 - an **acceptance check** a machine can run: unit tests, `studio godot-check`, a headless autopilot run that must
-  log `GAME_` markers, frame statistics of a render;
+  log `GAME_` markers, frame statistics of a render; for anything a player sees or touches, also a real-input probe
+  (clicks in window coordinates) and in-game screenshots the director reviews, in a wide and a tall window: the
+  autopilot calls the game logic directly, so it never meets the interface (skill/studio/SKILL.md, "Games");
 - its dependencies, and a size one worker finishes in under ~20 minutes.
 
 ## 4. Execution: one ticket at a time

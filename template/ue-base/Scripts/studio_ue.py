@@ -51,7 +51,36 @@ def fresh_asset(path, cls, factory):
 # ------------------------------------------------------------------ importing files
 def import_file(file_path, dest_dir, name=None):
     """Import a texture (png/jpg/exr), model (glb/gltf/fbx) or sound (wav) into dest_dir (/Game/...).
-    Re-importing replaces the existing asset. Returns the imported asset object paths."""
+    Re-importing replaces the existing asset. Returns the imported asset object paths.
+    Models import as ONE combined mesh per file (static, or skeletal per skeleton): by default Interchange makes
+    one mesh per glTF node (a Kenney ship = 16 meshes, a KayKit character = 7-9 skeletal parts)."""
+    if str(file_path).lower().endswith((".glb", ".gltf", ".fbx")):
+        pipeline = unreal.InterchangeGenericAssetsPipeline()
+        mp = pipeline.mesh_pipeline
+        mp.set_editor_property("combine_static_meshes_behavior", unreal.InterchangeCombineStaticMeshesBehavior.ALL)
+        mp.set_editor_property("combine_skeletal_meshes_behavior",
+                               unreal.InterchangeCombineSkeletalMeshesBehavior.BY_SKELETON)
+        params = unreal.ImportAssetParameters()
+        params.is_automated = True
+        params.replace_existing = True
+        if name:
+            params.destination_name = name
+        params.override_pipelines.append(unreal.SoftObjectPath(pipeline.get_path_name()))  # AssetImportTask can't
+        source = unreal.InterchangeManager.create_source_data(str(file_path))
+        result = unreal.InterchangeManager.get_interchange_manager_scripted().import_asset(dest_dir, source, params)
+        if not result:
+            raise RuntimeError(f"import failed: {file_path}")
+        for p in find_assets(dest_dir, "SkeletalMesh"):      # renders can't add material usages at run time
+            for slot in unreal.load_asset(p).get_editor_property("materials"):
+                mi = slot.get_editor_property("material_interface")
+                m = mi.get_base_material() if mi else None
+                if m and not m.get_editor_property("used_with_skeletal_mesh"):
+                    m.set_editor_property("used_with_skeletal_mesh", True)
+                    mel.recompile_material(m)
+        eal.save_directory(dest_dir, only_if_is_dirty=False, recursive=True)   # import_asset doesn't save
+        paths = [str(p).split("'")[1] if "'" in str(p) else str(p) for p in result]
+        log(f"imported {file_path} -> {', '.join(paths)}")
+        return paths
     task = unreal.AssetImportTask()
     task.set_editor_property("filename", str(file_path))
     task.set_editor_property("destination_path", dest_dir)
@@ -203,7 +232,10 @@ def post_process(exposure_bias=0.0, bloom=1.0, vignette=0.4, grain=0.0):
                       ("override_auto_exposure_bias", True), ("auto_exposure_bias", float(exposure_bias)),
                       ("override_bloom_intensity", True), ("bloom_intensity", float(bloom)),
                       ("override_vignette_intensity", True), ("vignette_intensity", float(vignette)),
-                      ("override_film_grain_intensity", True), ("film_grain_intensity", float(grain))]:
+                      ("override_film_grain_intensity", True), ("film_grain_intensity", float(grain)),
+                      # manual exposure must ignore the camera's f-stop, else f/8 under a normal sun renders black
+                      ("override_auto_exposure_apply_physical_camera_exposure", True),
+                      ("auto_exposure_apply_physical_camera_exposure", False)]:
         s.set_editor_property(prop, val)
     ppv.set_editor_property("settings", s)
     return ppv

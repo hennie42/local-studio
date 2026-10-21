@@ -5,6 +5,7 @@
 #   ./install.sh --profile 16gb      pick a hardware profile (models/profiles/*.json; "online" = no local models)
 #   ./install.sh --dry-run           show what would happen
 #   options: --yes (no questions) --no-godot --no-models (skip downloads) --no-build (skip llama.cpp build)
+#            --assets (first asset-library sync now, ~1 GB, unattended ~1 h)
 #            --reconfigure (rewrite ~/.config/studio/studio.env)
 #
 # Modes: "online" (Claude models do the work; needs a Claude login or ANTHROPIC_API_KEY), or a local profile
@@ -12,11 +13,11 @@
 # local model too with `claude-local` = fully local).
 set -euo pipefail
 STUDIO=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
-profile="" dry=0 yes=0 godot=1 models=1 build=1 reconf=0
+profile="" dry=0 yes=0 godot=1 models=1 build=1 reconf=0 assets=0
 while (($#)); do
   case $1 in
     --profile) profile=$2; shift ;;
-    --dry-run) dry=1 ;; --yes|-y) yes=1 ;; --no-godot) godot=0 ;; --no-models) models=0 ;; --no-build) build=0 ;;
+    --dry-run) dry=1 ;; --yes|-y) yes=1 ;; --no-godot) godot=0 ;; --no-models) models=0 ;; --no-build) build=0 ;; --assets) assets=1 ;;
     --reconfigure) reconf=1 ;;
     -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
     *) echo "unknown option $1" >&2; exit 1 ;;
@@ -102,6 +103,7 @@ STUDIO_EVAL_HOME=$HOME/StudioProjects/evals
 STUDIO_MODELS_DIR=$HOME/llm-models
 STUDIO_UE_ROOT=
 STUDIO_GODOT_HOME=$HOME/.local/share/studio/godot
+STUDIO_ASSET_HOME=$HOME/StudioProjects/assets
 STUDIO_LLAMA_URL=http://127.0.0.1:8080
 STUDIO_GPU_POLICY=timeshare
 STUDIO_GPU_MODELS=$big_models
@@ -139,6 +141,7 @@ for u in "$STUDIO"/systemd/*.service "$STUDIO"/systemd/*.timer; do [[ -e $u ]] &
 run systemctl --user daemon-reload
 run systemctl --user enable --now studio-broker.service
 ((godot)) && run systemctl --user enable --now godot-refresh.timer
+run systemctl --user enable --now studio-assets-sync.timer
 
 # ---------------------------------------------------------------- 6. local models
 if ((local)); then
@@ -159,6 +162,14 @@ fi
 if ((godot)); then
   say "Godot (latest stable + reference bundle)"
   run "$STUDIO/bin/godot-refresh" install latest --activate
+fi
+
+# ---------------------------------------------------------------- 8. asset library (optional first sync)
+if ((assets)); then
+  say "Asset library: first sync (Kenney mirror, Poly Haven + ambientCG index, thumbnails)"
+  run "$STUDIO/bin/studio-assets" sync
+else
+  echo "    Asset library: runs weekly (studio-assets-sync.timer); first sync now with: studio-assets sync"
 fi
 
 say "Done. Next:"

@@ -29,6 +29,8 @@ the studio repo (`studio-config` prints its location and every configured path; 
 - **Sandbox**: workers can only see the project (+ system dirs); no home dir, no other projects, no network
   except the local LLM. Don't put secrets or other projects' paths in worker prompts; they can't reach them anyway.
 - Root/sudo steps: ask the user to run them in a separate terminal (the `!` prefix can't prompt for passwords).
+- **Commit only on a green check:** chain checks and the commit with `&&`, never `;` (a commit once went in after a
+  failing check). Stop processes by PID or systemd unit, never `pkill -f <pattern>` (it matched its own shell).
 
 ## 1. Preflight (once per session)
 ```sh
@@ -67,11 +69,25 @@ Then create the project and write the plan:
 studio-new <Name> [--cpp]            # Unreal; games: --cpp. Prints the project dir (under STUDIO_PROJECTS_UE)
 studio-new <Name> --godot            # Godot 4.7 + GDScript (under STUDIO_PROJECTS_GODOT)
 ```
+**Asset pass** (before the plan; docs/assets.md): workers place assets well and model them badly, so props,
+characters, textures, HDRIs, sprites and sound effects come from the CC0 library, not from worker modelling.
+Read `studio-assets taste` and `studio-assets style <project>` first, then per need search
+(`studio-assets search <words> --kind model|material|hdri|sprite|tileset|ui|sound`, `show <id>`, Read the
+thumbnails) and write one proposal JSON: per need a main set and at most one alternative in a different style,
+`height_m` where real size matters (Kenney kits are in kit units, not metres), `decorative: true` for no
+collision, and `gaps` for what the library lacks (offer a procedural Blender model, a TRELLIS.2 generation
+(evals/scorecard-gen3d-20261016.md) or a brief change; never fill a gap silently). Then
+`studio-assets propose <project> <file>`, run `studio-assets review <project>` in the background and give the user
+the URL; when it returns: `studio-assets fetch <project>` and `studio-assets check <project> --fix`. Tickets name
+approved assets by their `assets/...` path. A ticket that needs something new comes back to you for a small ad-hoc
+pass; workers never search the library or the network.
+
 Write `<project>/PLAN.md`: the deliverable spec (duration/resolution/fps or game loop + controls), then a numbered
 list of **small, verifiable steps**. Each step has: id, owner suggestion (local/claude per routing), the exact files
 it touches, and a **check** you can run. Keep steps to what one worker can do in < 20 min. Commit the plan.
 
-Typical cinematic steps: environment script (Scripts/build_env.py) -> hero props (Blender scripts -> assets/*.glb ->
+Typical cinematic steps: environment script (Scripts/build_env.py) -> hero props (approved library assets; Blender
+scripts -> assets/*.glb only for gaps ->
 import script) -> materials/lighting -> Level Sequence + cameras -> preview render + QA -> audio score
 (Scripts/score.py) + SFX -> final render -> encode + mux -> deliver.
 Typical game steps: C++ module skeleton (GameMode, Pawn, input) -> core mechanic class -> level build script ->
@@ -80,6 +96,34 @@ Godot steps: same shape, with GDScript scenes built in code or by generator scri
 `--autopilot` from the first playable step, `studio godot-play ... --autopilot --shots` as the check, then
 `studio godot-export <linux|web|windows|all>` + `studio run-export 60 --autopilot`. Godot clips: scene animated from
 time -> `studio godot-movie` -> `studio encode` -> mux.
+
+**Ticket-writing checklist** (from the retros, retros/*/retro-*.md; each item cost a playtest round once):
+- Every **test you write is validated as passable**: against a reference implementation, or by reasoning each check
+  against the game's real states (a probe once looked for fog before the first click, when there is none by design;
+  "fails cleanly today" is not enough).
+- Anything a player **sees or touches** gets a real-input probe (`tools/probe.sh`, a ProbeBase scene) and in-game
+  screenshots you look at, in a **wide and a tall window**; screenshots come from the viewport texture in a probe,
+  not Movie Maker (it crops tall windows).
+- **Look changes are measured** with `studio-shotdiff` on variants of **one view in one run** (switch the effect live
+  in a probe, like DontPanicIsland's `tests/look.gd`): autopilot frames differ between runs (F40).
+- **Art specs are checked from the gameplay camera** (flat labels were unreadable at the camera angle) and against
+  real-world meanings (red/white/blue stripes read as the Dutch flag).
+- Every **refused player action gives feedback**, and tools say what they did.
+- **Audio** gets a measured check (onset grid, loop seam, loop flag) besides listening.
+- Tickets over ~15 minutes of expected worker time are split (Gemma's failures were all time-outs). Split by kind:
+  an image layout (cards, posters) first as a renderer checked by a contact sheet, then the compositor; an audio
+  piece first as the arrangement (you write its test), then the sync to the edit (DontPanicTrailer F6, F10).
+- **Unreal API steps** (imports, pipelines, Sequencer): probe the property names yourself first and put them in the
+  ticket, cap the ticket at 20 min, and tell the worker where scratch scripts go (`.studio/scratch/`). Without
+  names a worker spends the whole budget writing probe scripts (F5).
+- Probes wait for game state, never a fixed time.
+- Run new probes against **several boards/islands/seeds** before relying on them, sample motion at 3+ points, and
+  have effects name their nodes readably (`add_child(node, true)`): probes validated on one island failed on others.
+- A ticket names **every code path that triggers its behaviour** (player input, the autopilot, tools) and the data
+  each one passes (T18: autopilot moves carry no `opened` list, so a spec that read only that missed every
+  autopilot explosion).
+- During a project, append a finding to `retros/<Project>/findings.jsonl` with every fix
+  (docs/self-improvement-design.md); at the end run `studio-retro <project>` and turn the open guards into guards.
 
 ## 3. Delegating a step
 Write the worker prompt to a file **outside the repo** (your scratchpad), self-contained:
@@ -111,6 +155,11 @@ files the worker is touching.
    the project and say so in the final report.
 
 ## 5. Rendering and QA (cinematics)
+- Long renders run in chunks per shot (resumable over a power-off): each chunk starts one frame early, one-shot
+  props vanish on the cut frame, and after the render `studio-cutcheck <frames> --edit <edit.json>` must pass: a
+  chunk's first frame ghosts the previous shot otherwise, and contact sheets don't show it (DontPanicTrailer F11).
+- Water: a shader plane (shore-distance field, panned normals), not the Water plugin, which renders nothing headless
+  (F3). Manual exposure needs "apply physical camera exposure" off (`su.post_process` does it; F2).
 - Preview: 960x540, 1 temporal sample. QA by eye: exposure, framing, black frames, missing-texture checkerboards,
   popping, camera through geometry. Local vision models can pre-screen frames, but you make the call.
 - Final: 1920x1080 (or as briefed), 8 temporal samples, warm-up 60/32. Then `studio encode`, then mux audio:
@@ -124,6 +173,17 @@ files the worker is touching.
   Non-linear games get layered tests instead of one run (docs/godot.md, "Testing non-linear games"): logic tests,
   a reachability check of the progression graph, one scenario autopilot per route/ending (fixture start, objective
   bot on navigation), a seeded random explorer, and a coverage check over all markers.
+- **The autopilot is not a playtest of the interface** (Don't Panic Island, 2026-10-18: 15/15 tickets passed their
+  autopilot checks, and the first human found: clicks swallowed by a full-screen HUD Control, help button and tool
+  bar off-screen (bottom-anchored panels grow down by default), centred panels hanging from the centre, two tips
+  drawn on top of each other, a black screen when the small GPU's LLM held the VRAM, music timed in bars instead
+  of beats, unreadable numbers at the camera angle). Every UI or presentation ticket also needs:
+  a **real-input check** (a probe scene that clicks in window coordinates, `get_screen_transform() * pos`, and
+  asserts the result, like DontPanicIsland's `tests/play_click.tscn`), an **in-game screenshot** reviewed by the
+  director (`get_viewport().get_texture().get_image()` from a probe; Movie Maker crops tall windows), in a wide
+  and a tall window shape (frame with maths, or a 1920x1080 SubViewport sharing the world), and for audio a
+  measured check (onset grid, loop seam) besides listening. Before the human playtest: `godot-web-smoke` for web
+  exports, and start desktop builds with `studio-play` (it frees the small GPU first).
 - **Unreal**: C++ in `Source/<Name>/`; build with `studio ue-build`; levels via Python scripts; input via Enhanced
   Input set up in C++ (no Blueprint graphs: workers can't edit them). Package with `studio ue-package`, verify with
   `studio run-packaged 200 -autopilot` (markers via GameEvent.h: Shipping strips UE_LOG).
@@ -132,6 +192,11 @@ files the worker is touching.
   Godot 3 syntax; `godot-api/` holds the exact 4.7 API to grep). Review: `godot-check` clean, `godot-play` log has
   the expected markers and no `SCRIPT ERROR`, screenshots look right. Exports are chosen at export time
   (`godot-export linux|web|windows|all`); the web build uses the Compatibility renderer (check its look).
+
+**Performance (games):** measure frame time on the GPU the monitor is on (run Godot with `--gpu-index <display>`,
+or `studio-play`, which picks it); `studio godot-play` runs on the Godot jobs' GPU (the RTX 2060 here), where every
+frame is copied to the display GPU: DontPanicIsland measured 25 fps there and 60 fps locked on the display GPU (F43).
+Break a slow frame down before optimising: script time, render-thread CPU, GPU (`tests/perf.gd` in DontPanicIsland).
 
 ## 7. Shutdown checklist (long days end with a power-off)
 1. Before the deadline, `touch $STUDIO_EVAL_HOME/runs/PAUSE` (suites) or stop drivers between steps (they resume from

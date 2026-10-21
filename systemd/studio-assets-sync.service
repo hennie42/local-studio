@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh the studio's CC0 asset library index and mirror (studio-assets sync)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/studio-assets sync
+Nice=10
+IOSchedulingClass=idle
+# Blender thumbnail batches and big indexes stay in their own memory budget (oomd must not pick the desktop)
+MemoryMax=12G
+MemorySwapMax=0
