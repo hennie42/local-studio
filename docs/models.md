@@ -16,10 +16,10 @@ productions. Other hardware: see [Choosing for your hardware](#choosing-for-your
 | quick log triage on a small second GPU | Spark-X2.5-4B | 0.56-0.75 on log triage (varies run to run) in ~20 s; never for multi-step tool work |
 | director | Claude (Claude Code) | plans, reviews, makes the visual calls; local workers draft and the director verifies |
 
-## Capability suite, rerun: Gemma 4 vs Qwen3.6 (2026-10-15)
+## Capability suite, rerun: Gemma 4 vs Qwen3.6
 
 The same suite on today's tooling (no stray MCP tools in workers, synthetic vision frames); table:
-`evals/scorecard-20261015.md`.
+`evals/scorecard-gemma-qwen.md`.
 
 | model | agent tasks passed | mean | worker time | turns | peak ctx | vision | log triage |
 |---|---|---|---|---|---|---|---|
@@ -30,17 +30,17 @@ Qwen3.6 generates faster (77.6 vs 67.8 tok/s) but takes 2.3x the turns, and its 
 musical key, a wrong light, a C++ test file with 0 asserts). Gemma's one miss was the same rounding rule Bonsai
 missed in the first suite. With Gemma also the Godot worker, one model now does all agent work.
 
-**Two parallel workers on one GPU?** Measured 2026-10-15 (Gemma 4, llama-server `-np 2 --kv-unified` vs `-np 1`,
+**Two parallel workers on one GPU?** Measured (Gemma 4, llama-server `-np 2 --kv-unified` vs `-np 1`,
 same 131K context shared): generation for two requests at once reaches 1.3x the total tokens/s (59 vs 45 tok/s, each
 request dropping to 44 tok/s), but prompt processing doesn't scale at all (~830 tok/s shared), so two 36K-token
 prompts take exactly as long either way (106 s). Agent turns are a mix of both, so a second slot would gain ~10-20%
 while making each worker slower and sharing one context budget. Not worth it: workers run one at a time.
 
-## Capability suite (2026-10-07/08)
+## Capability suite (first run)
 
 14 tasks in 7 areas: coding (bug fix, feature, C++), Unreal (scene, sequence, C++ actor, render via the broker),
 Blender + media (model a prop, ffmpeg edit, procedural audio), vision (exposure and defect judgement on frames), long
-context recall, and Unreal log triage. Agent tasks run 2 reps; full table: `evals/scorecard-20261008.md`.
+context recall, and Unreal log triage. Agent tasks run 2 reps; full table: `evals/scorecard-suite.md`.
 
 | model (Claude Code harness) | coding | Unreal | Blender + media | vision | long ctx | log triage |
 |---|---|---|---|---|---|---|
@@ -55,7 +55,7 @@ instead of 8/8, Blender/media equal, coding slightly worse, and slower with larg
 Claude Code (`claude-local`). One OpenCode run was excluded because the worker read its own grader: that led to the
 stricter sandbox (workers can read nothing outside their project).
 
-**Small-GPU challengers (2026-10-15)**, 2 runs each on the 2060, same tooling (`evals/scorecard-small-20261015.md`):
+**Small-GPU challengers**, 2 runs each on the 2060, same tooling (`evals/scorecard-small-gpu.md`):
 
 | model | UE log triage | vision exposure / defects | recall (32K) |
 |---|---|---|---|
@@ -70,11 +70,11 @@ No small model is good enough to change the routing: triage stays with Bonsai (0
 **Small models** (4-9B on the 6 GB card) can fix a single file or triage a log, but fail multi-step tool work
 (Blender 0/3, ffmpeg 0/3): they never get delegated agent tasks.
 
-## Godot suite (2026-10-14/15)
+## Godot suite
 
 4 tasks: port four Godot 3 scripts to 4.7 (behaviour tests), a race-logic class against 21 hidden tests, a 2D
 platformer whose **exported Linux build** must finish the level on autopilot, and a 3D clip via Movie Maker. Same
-prompts and time limits for every model. Table: `evals/scorecard-godot-20261014.md`.
+prompts and time limits for every model. Table: `evals/scorecard-godot.md`.
 
 Two runs per task for the three capable models (scores of run 1 and run 2):
 
@@ -132,7 +132,7 @@ measured. The others are estimates from the same models and the VRAM each needs:
 RAM matters for MoE models whose experts live in system RAM (Qwen3.6, Gemma 4 on smaller cards): faster RAM means
 faster generation, and with **128 GB** the strongest open model we looked at, Qwen3.8-Flash-Next (125B MoE, 6B
 active), becomes practical (users report ~600 tok/s prompt processing and ~15 tok/s generation on a 16 GB card +
-128 GB RAM; with 64 GB it doesn't fit). Research notes and sources: `docs/godot-model-research-20261014.md`.
+128 GB RAM; with 64 GB it doesn't fit). Research notes and sources: `docs/godot-model-research.md`.
 
 **Adding a model:** add it to `models/catalog.json` (files, flags, context, vision), put it in a profile, run
 `install.sh --no-build` (or `models/download.sh` + `models/gen-config.py llama-swap`), then measure it:

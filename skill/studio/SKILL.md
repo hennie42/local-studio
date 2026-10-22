@@ -22,7 +22,7 @@ the studio repo (`studio-config` prints its location and every configured path; 
   local LLM for GPU jobs and the next worker request reloads it (reload + re-reading the worker's context costs
   ~15 s to ~2 min); don't fight it. Timesharing is safe only for GPU jobs the *worker* submits (it waits for them). Don't run
   your own GPU jobs (ue-play, ue-render) while a worker is active: its next request reloads the 15 GB model
-  mid-job and UE dies with Vulkan out-of-memory (seen 2026-10-08). Do CPU work (code, builds) meanwhile. Measured: 1080p 8-sample render 34.5 s alone; co-residency with a 32K-context
+  mid-job and UE dies with Vulkan out-of-memory. Do CPU work (code, builds) meanwhile. Measured: 1080p 8-sample render 34.5 s alone; co-residency with a 32K-context
   LLM works (+17% render time) but agent runs need 40-120K context, so time-sharing at 192K is the default.
   A small second GPU (6 GB) can't render 1080p ray-traced Unreal scenes: use it for small models and Godot jobs
   (STUDIO_GODOT_ON_SMALL_GPU=1), so the worker LLM on the big GPU is never unloaded for Godot.
@@ -38,7 +38,7 @@ ensure-llama-swap && systemctl --user start studio-broker
 cat ~/.config/studio/routing.json        # which local model/agent does what (from the capability tests)
 ```
 `studio-worker` reads its default model/agent from routing.json. Measured profile (scorecard:
-`evals/scorecard-20261015.md`, measured on the reference machine described in docs/models.md):
+`evals/scorecard-gemma-qwen.md`, measured on the reference machine described in docs/models.md):
 - **Default worker, Godot included: Gemma 4 26B-A4B in Claude Code** (19/20 agent runs passed across coding, UE
   Python/C++/render, Blender, ffmpeg, audio, and 8/8 in the Godot suite; 2-5 min per step; context peaks <= 45K of 131K).
 - **Retry with the other model when the approach was wrong:** Bonsai 2 27B (19/20, 8/8 Godot, ~3x slower; a
@@ -76,7 +76,7 @@ Read `studio-assets taste` and `studio-assets style <project>` first, then per n
 thumbnails) and write one proposal JSON: per need a main set and at most one alternative in a different style,
 `height_m` where real size matters (Kenney kits are in kit units, not metres), `decorative: true` for no
 collision, and `gaps` for what the library lacks (offer a procedural Blender model, a TRELLIS.2 generation
-(evals/scorecard-gen3d-20261016.md) or a brief change; never fill a gap silently). Then
+(evals/scorecard-gen3d.md) or a brief change; never fill a gap silently). Then
 `studio-assets propose <project> <file>`, run `studio-assets review <project>` in the background and give the user
 the URL; when it returns: `studio-assets fetch <project>` and `studio-assets check <project> --fix`. Tickets name
 approved assets by their `assets/...` path. A ticket that needs something new comes back to you for a small ad-hoc
@@ -173,7 +173,7 @@ files the worker is touching.
   Non-linear games get layered tests instead of one run (docs/godot.md, "Testing non-linear games"): logic tests,
   a reachability check of the progression graph, one scenario autopilot per route/ending (fixture start, objective
   bot on navigation), a seeded random explorer, and a coverage check over all markers.
-- **The autopilot is not a playtest of the interface** (Don't Panic Island, 2026-10-18: 15/15 tickets passed their
+- **The autopilot is not a playtest of the interface** (Don't Panic Island: 15/15 tickets passed their
   autopilot checks, and the first human found: clicks swallowed by a full-screen HUD Control, help button and tool
   bar off-screen (bottom-anchored panels grow down by default), centred panels hanging from the centre, two tips
   drawn on top of each other, a black screen when the small GPU's LLM held the VRAM, music timed in bars instead

@@ -4,13 +4,13 @@
   studio-retro <project> [--name NAME] [--out FILE]
 
 Reads retros/<NAME>/findings.jsonl (NAME defaults to the project folder's name) and the project's dispatcher state
-(.studio/dispatch.json), and writes retros/<NAME>/retro-<date>.md: findings per cause with their cost, who caught
-them (the escape rate: found by the user, no check caught it), first-try rate and minutes per model and attempt
-kind, and the open guards to turn into lint rules, helpers, template files, checklist items or worker pitfalls.
+(.studio/dispatch.json), and writes retros/<NAME>/retro.md: findings per cause with their cost, who caught them
+(the escape rate: found by the user, no check caught it), first-try rate and minutes per model and attempt kind,
+and the open guards to turn into lint rules, helpers, template files, checklist items or worker pitfalls. A
+hand-written "## Lessons" section at the end of an existing retro.md is kept.
 """
 import argparse
 import collections
-import datetime
 import json
 import pathlib
 import sys
@@ -32,8 +32,7 @@ def main():
     F = [json.loads(l) for l in fpath.read_text().splitlines() if l.strip()]
     state = proj / ".studio/dispatch.json"
     D = json.loads(state.read_text()) if state.exists() else {}
-    today = datetime.date.today().isoformat()
-    L = [f"# Retro: {name} ({today})", "", f"{len(F)} findings, {sum(f.get('cost_min', 0) for f in F)} minutes lost "
+    L = [f"# Retro: {name}", "", f"{len(F)} findings, {sum(f.get('cost_min', 0) for f in F)} minutes lost "
          f"in total. Format and loop: docs/self-improvement-design.md.", ""]
 
     # who caught what: the escape rate
@@ -91,7 +90,10 @@ def main():
             for ref, ids in refs.items():
                 L.append(f"- **{kind}**: {ref} ({', '.join(ids)})")
         L.append("")
-    out = pathlib.Path(a.out) if a.out else REPO / "retros" / name / f"retro-{today}.md"
+    out = pathlib.Path(a.out) if a.out else REPO / "retros" / name / "retro.md"
+    old = out.read_text() if out.exists() else ""
+    if "\n## Lessons" in old:                      # the director's lessons survive a rerun
+        L.append(old[old.index("\n## Lessons") + 1:].rstrip("\n"))
     out.write_text("\n".join(L) + "\n")
     print(f"wrote {out}")
     print(f"escape rate {esc / len(F):.0%}; open guards: "

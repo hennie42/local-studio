@@ -130,7 +130,7 @@ def lint_gd(path, text):
 NOT_TOP_LEFT = re.compile(r"(\w[\w.]*)\.set_anchors(?:_and_offsets)?_preset\(\s*Control\.PRESET_([A-Z_]+)\s*\)")
 TOP_LEFT_PRESETS = {"TOP_LEFT", "TOP_WIDE", "LEFT_WIDE", "FULL_RECT"}
 PITFALL_RULES = {"anchor-grow", "fullrect-mouse", "null-cast", "label3d-theme"}
-# fatal since 2026-10-18 (all projects clean); GODOT_LINT_PITFALLS_FATAL=0 turns them into warnings, e.g. while a
+# fatal now that all projects are clean; GODOT_LINT_PITFALLS_FATAL=0 turns them into warnings, e.g. while a
 # worker run is in progress and a new rule would trip it on files outside its ticket
 PITFALLS_FATAL = os.environ.get("GODOT_LINT_PITFALLS_FATAL", "1") == "1"
 VALUE_TYPES = r"(Vector2i|Vector2|Vector3i|Vector3|Vector4|int|float|bool|Color|Rect2|Rect2i|Basis|Transform2D|Transform3D)"

@@ -1,4 +1,4 @@
-# Godot capability suite: godot-20261014
+# Godot capability suite
 
 Scores per run (rep 1, rep 2), mean minutes per run in brackets; Claude Code harness, same prompts/time limits; Godot GPU jobs on a second GPU (worker LLM never unloaded), headless game runs available. Score 0..1 (pass = 1.0).
 
@@ -35,4 +35,4 @@ Scores per run (rep 1, rep 2), mean minutes per run in brackets; Claude Code har
 | qwen3.8-27b-q3 | platformer+export | 14 | 26341 | 4 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | check clean; inputs ok; exports linux=NO web=NO; project (no export): start=False finish=t=1.0 coins 0/5 |
 | qwen3.8-27b-q3 | Movie Maker clip | 13 | 23164 | 5 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | check clean; Movie Maker frames 0; out/clip.mp4 missing |
 
-Clip frames (first/middle/last per model): /home/user/StudioProjects/evals/runs/godot-20261014/clips_contact_sheet.jpg
+Clip frames (first/middle/last per model): /home/user/StudioProjects/evals/runs/godot/clips_contact_sheet.jpg

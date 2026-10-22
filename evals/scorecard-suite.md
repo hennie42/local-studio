@@ -1,4 +1,4 @@
-# Capability scorecard: suite-20261007
+# Capability scorecard: first suite
 
 Scores 0-1 per task (graders validated against reference solutions). `pass` = all checks.
 

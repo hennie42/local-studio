@@ -66,7 +66,7 @@ Another worker tried this ticket and the director's check still failed. The chec
 Start from the current project files (the failed attempt was discarded)."""
 
 
-# 2026-10-18, pilot: Gemma's follow-ups went 0/3 (all ran out the clock), Bonsai's fresh retries 3/3: so after the
+# pilot: Gemma's follow-ups went 0/3 (all ran out the clock), Bonsai's fresh retries 3/3: so after the
 # worker's first try, the retry model gets a fresh start and then a follow-up in its own session
 DEFAULT_ATTEMPTS = ["first:worker", "retry:retry", "followup:retry"]
 

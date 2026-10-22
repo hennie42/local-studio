@@ -146,7 +146,7 @@ gp2 = d.box(930, 360, 230, 90, B("RTX 2060 6 GB", "small model, Godot rendering"
 gp3 = d.box(930, 500, 230, 90, B("Anthropic API", ""), "claude", shape="ellipse;")
 d.edge(models[0], gp1, ""); d.edge(models[1], gp1, ""); d.edge(models[2], gp2, ""); d.edge(models[3], gp3, "")
 d.text(40, 620, 1120, 60, "Source: <code>~/.config/studio/routing.json</code>, written from the hardware profile by install.sh; "
-       "measured in evals/scorecard-20261015.md and evals/scorecard-godot-20261014.md. Qwen3.6-35B-A3B stays installed as a "
+       "measured in evals/scorecard-gemma-qwen.md and evals/scorecard-godot.md. Qwen3.6-35B-A3B stays installed as a "
        "fallback worker (16/20).", fs=12)
 (OUT / "routing.drawio").write_text(d.xml())
 

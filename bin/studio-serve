@@ -21,6 +21,9 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+from studio_config import path  # noqa: E402
+
 CERT_DIR = pathlib.Path.home() / ".config/studio/serve-cert"
 HOOK = """<script>(function(){for(const k of ['log','warn','error']){const o=console[k];console[k]=function(...a){
 try{navigator.sendBeacon('/__log',k+': '+a.join(' '))}catch(e){};o.apply(console,a)}}
@@ -54,7 +57,7 @@ def main():
     a, game_args = ap.parse_known_args()
     proj = pathlib.Path(a.project)
     if not proj.is_absolute() and not proj.exists():
-        proj = pathlib.Path("/home/user/StudioProjects/godot") / proj
+        proj = path("STUDIO_PROJECTS_GODOT") / proj
     site = proj.resolve() / "build/web"
     if not (site / "index.html").exists():
         sys.exit(f"no web export at {site} (in the project: studio godot-export web)")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""NeonClip: model comparison clip (user request 2026-10-08: Bonsai vs Qwen3.6; Gemma 4 added 2026-10-14).
+"""NeonClip: model comparison clip (user request: Bonsai vs Qwen3.6; Gemma 4 added later).
 
 Same plan, same prompts, same mechanical checks for each model, in separate projects. The director's (Claude's)
 involvement is identical by construction: this script runs every step on the local worker, checks it mechanically,
@@ -28,7 +28,7 @@ RUN = cfg_path("STUDIO_EVAL_HOME") / "neonclip-run"
 UPROJECTS = cfg_path("STUDIO_PROJECTS_UE")
 MODELS = {"qwen": ("qwen3.6-35b-a3b", "NeonClipQwen", "Qwen3.6-35B-A3B"),
           "bonsai": ("bonsai2-27b", "NeonClipBonsai", "Bonsai 2 27B"),
-          "gemma": ("gemma4-26b-a4b", "NeonClipGemma", "Gemma 4 26B-A4B")}   # added 2026-10-14
+          "gemma": ("gemma4-26b-a4b", "NeonClipGemma", "Gemma 4 26B-A4B")}   # added later
 STEPS = [("tex", "01-tex.md"), ("towers", "02-towers.md"), ("import", "03-import.md"), ("city", "04-city.md"),
          ("seq", "05-seq.md"), ("lookdev", "06-lookdev.md"), ("rain", "07-rain.md"), ("score", "08-score.md")]
 TIMEOUT = 4500   # per worker attempt, same for both models

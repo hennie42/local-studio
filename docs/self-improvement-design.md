@@ -1,6 +1,6 @@
 # Self-improvement: learning from every clip and game
 
-**Status: v1 built 2026-10-18** (approved by the user the same day; first retro: Don't Panic Island).
+**Status: v1 built** (approved by the user the same day; first retro: Don't Panic Island).
 
 **Goal:** every mistake in a clip or game makes the studio better at the next one, measurably. The principle:
 **turn a mistake into a guard, not a note.** A lesson in prose helps only if someone reads it at the right moment;
@@ -29,7 +29,7 @@ escape rate is `user / all`; the aim is to push findings left: user -> director 
 ## Finding format (one JSON object per line)
 
 ```json
-{"id": "F09", "date": "2026-10-18", "phase": "playtest", "what": "clicks did nothing",
+{"id": "F09", "phase": "playtest", "what": "clicks did nothing",
  "cause": "engine-api", "why": "the HUD's full-screen root Control kept the default mouse_filter STOP",
  "caught_by": "user", "cost_min": 30, "fix": "c151e12",
  "guard": {"kind": "lint", "ref": "godot-lint full-rect-mouse", "status": "done"}}

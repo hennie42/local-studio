@@ -1,7 +1,7 @@
 # Asset library: design
 
-**Status: v1 built 2026-10-16** (user guide: [assets.md](assets.md)). Decided in a `/grill-me` interview on
-2026-10-15. Deviations from the design below: KayKit zips are downloaded by hand into an inbox (itch.io's
+**Status: v1 built** (user guide: [assets.md](assets.md)). Decided in a `/grill-me` interview.
+Deviations from the design below: KayKit zips are downloaded by hand into an inbox (itch.io's
 robots.txt forbids automated downloads); Kenney + KayKit measured ~1 GB, so both are mirrored per file.
 
 **Goal:** after a brief is approved, the director proposes free assets that fit it; the user says yes or no per set;
@@ -12,7 +12,7 @@ workers are good at placing things and bad at modelling them (see [models](model
 
 | topic | decision |
 |---|---|
-| Licenses | **CC0 only.** CC-BY with a generated `CREDITS.md` can become a per-project switch later. Each asset's license is checked at download time and recorded per asset: licenses change (Quaternius moved from CC0 to a no-redistribution license on 2026-08-28; packs downloaded before keep their old terms). |
+| Licenses | **CC0 only.** CC-BY with a generated `CREDITS.md` can become a per-project switch later. Each asset's license is checked at download time and recorded per asset: licenses change (Quaternius moved from CC0 to a no-redistribution license in 2026; packs downloaded before keep their old terms). |
 | Asset types | 3D models, PBR textures/materials, HDRIs, 2D sprites/tilesets/UI, sound effects. Not music (procedural, brief-specific) or fonts (mostly OFL: decide separately). |
 | Sources, v1 | **Kenney** (~220 packs: 3D as GLB, 2D, UI, audio), **KayKit** free tier (low-poly kits), **Poly Haven** (photoreal models, textures, HDRIs; public API), **ambientCG** (PBR materials, HDRIs; public API). |
 | Sources, later | **Freesound** filtered to CC0 (downloading originals needs an OAuth2 login); Sketchfab and Poly Pizza filtered to CC0 as gap fillers. |
@@ -39,7 +39,7 @@ workers are good at placing things and bad at modelling them (see [models](model
 - An asset-pass section in the `/studio` skill, and a `docs/assets.md` user guide once it is built.
 - Downloaded assets never go into the studio repo itself.
 
-## Facts the design rests on (checked 2026-10-15)
+## Facts the design rests on (checked in 2026)
 
 | source | access | license | notes |
 |---|---|---|---|

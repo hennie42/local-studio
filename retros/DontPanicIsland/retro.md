@@ -1,4 +1,4 @@
-# Retro: DontPanicIsland (2026-10-18)
+# Retro: DontPanicIsland
 
 44 findings, 930 minutes lost in total. Format and loop: docs/self-improvement-design.md.
 

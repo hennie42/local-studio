@@ -1,6 +1,6 @@
 # Progress dashboard: design
 
-**Status: designed 2026-10-17, not built.** Decided in a `/grilling` interview on 2026-10-17. Build after the Don't
+**Status: designed, not built.** Decided in a `/grilling` interview. Build after the Don't
 Panic Island playtest, and only on the user's go-ahead.
 
 **Goal:** the user can always see what the studio is doing and what is left, from this machine or a phone on the

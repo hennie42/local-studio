@@ -1,4 +1,4 @@
-# 3D generation bake-off (task 15), 2026-10-16: TRELLIS.2 wins clearly, TripoSR only for simple props
+# 3D generation bake-off (task 15): TRELLIS.2 wins clearly, TripoSR only for simple props
 
 Question: can single-image 3D generation fill asset-library gaps (docs/assets-design.md) where workers fail at
 open-ended modelling (the SpinnerRun ship)? **Yes, with TRELLIS.2: a game-ready 10k-triangle textured prop in
@@ -54,8 +54,8 @@ connected-components pass, and `score.sh` runs the measures one at a time in a
 - xformers instead of flash-attn (no multi-hour compile); CuMesh, FlexGEMM and o-voxel patched to C++20 for torch
   2.14; o-voxel installed `--no-deps` (it would rebuild its git dependencies unpatched); `transformers<5` (5.x
   moved DINOv3's layers); `einops`.
-- Gated models: DINOv3 (`facebook/dinov3-vitl16-pretrain-lvd1689m`, Meta licence, access granted to hennie42 on
-  2026-10-16; token in ~/.cache/huggingface). The background remover was swapped from briaai/RMBG-2.0 (gated,
+- Gated models: DINOv3 (`facebook/dinov3-vitl16-pretrain-lvd1689m`, Meta licence, access granted to hennie42;
+  token in ~/.cache/huggingface). The background remover was swapped from briaai/RMBG-2.0 (gated,
   CC BY-NC) to ZhengPeng7/BiRefNet (MIT).
 - TripoSR: torchmcubes needs `lerp` renamed (clashes with CUDA 13); `--bake-texture` has an upstream device bug
   (unused).

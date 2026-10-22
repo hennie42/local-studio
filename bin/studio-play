@@ -8,7 +8,7 @@ The game runs in the foreground; its log is in ~/.local/share/godot/app_userdata
 GPU: the display GPU (the card the monitor is connected to) when it has >= 2 GB of video memory free. Rendering on
 the other card costs a copy of every frame across PCIe, which grows with the window: DontPanicIsland ran at ~25 fps
 with a ~0.1 s stall after the first dig in a 1920x2100 window on the RTX 2060, and at a locked 60 fps with no stall
-on the RTX 5070 Ti that drives the monitor (F43, 2026-10-19). Only when the display GPU is full (a worker model is
+on the RTX 5070 Ti that drives the monitor (F43). Only when the display GPU is full (a worker model is
 loaded) does it fall back to the Godot jobs' GPU, after unloading the small local models parked there
 (STUDIO_SMALL_MODELS, e.g. Spark on the RTX 2060: loaded, they leave the game no video memory and it shows a black
 screen); llama-swap loads them again on the next request that needs them.

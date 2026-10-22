@@ -1,4 +1,4 @@
-# Retro: DontPanicTrailer (2026-10-19)
+# Retro: DontPanicTrailer
 
 11 findings, 255 minutes lost in total. Format and loop: docs/self-improvement-design.md.
 
@@ -45,7 +45,7 @@
 - **tool**: bin/studio-cutcheck (tested on a synthetic ghost); AGENTS.md + skill section 5: chunks start a frame early (F11)
 
 
-## Lessons (director, 2026-10-19)
+## Lessons (director)
 
 - **Local workers on Unreal work:** 7 worker steps; first-try passes 3 (L1 hex maths, L3 island, plus H4 whose
   script worked though the run timed out); the director finished or rewrote 4 (L2 import, C1 cards, the score

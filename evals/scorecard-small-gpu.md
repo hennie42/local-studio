@@ -1,4 +1,4 @@
-# Small-GPU challengers (2026-10-15): Gemma 4 E4B and Ministral 3 8B vs Spark-X2.5-4B and Qwen3.5-4B
+# Small-GPU challengers: Gemma 4 E4B and Ministral 3 8B vs Spark-X2.5-4B and Qwen3.5-4B
 
 RTX 2060 6 GB, 2 runs per task, direct tasks only (small models never get agent work). Summary and decision: docs/models.md.
 

@@ -75,7 +75,7 @@
       "model": "gemma-4-E4B-it-UD-Q4_K_XL.gguf", "mmproj": "gemma-4-E4B-mmproj-F16.gguf", "mmproj_offload": false,
       "args": "-c 32768 -ctk q8_0 -ctv q8_0 -ot per_layer_token_embd=CPU --temp 1.0 --top-p 0.95 --top-k 64 --min-p 0.0",
       "notes": ["Per-layer embeddings (a lookup table, ~1/3 of the file) stay in system RAM (-ot), so the 5 GB file fits on 6 GB."],
-      "tested": "2026-10-15, 2 runs: triage 0.69 (best small model; Spark 0.56, Bonsai 0.88) in ~90 s, vision 0.78/0.81 (misses overexposure), recall 3/3 at 28K"
+      "tested": "2 runs: triage 0.69 (best small model; Spark 0.56, Bonsai 0.88) in ~90 s, vision 0.78/0.81 (misses overexposure), recall 3/3 at 28K"
     },
     "ministral3-8b": {
       "name": "Ministral 3 8B Instruct 2512 IQ4_XS + vision (small GPU, tight)",
@@ -84,7 +84,7 @@
                 ["unsloth/Ministral-3-8B-Instruct-2512-GGUF", "mmproj-F16.gguf", "Ministral-3-8B-mmproj-F16.gguf"]],
       "model": "Ministral-3-8B-Instruct-2512-IQ4_XS.gguf", "mmproj": "Ministral-3-8B-mmproj-F16.gguf", "mmproj_offload": false,
       "args": "-c 16384 -ctk q8_0 -ctv q8_0 --temp 0.15",
-      "tested": "2026-10-15, 2 runs: triage 0.38, vision 0.65/0.62, 16K context too small for the recall test: not recommended"
+      "tested": "2 runs: triage 0.38, vision 0.65/0.62, 16K context too small for the recall test: not recommended"
     },
     "spark-4b": {
       "name": "Spark-X2.5-4B Q8_0 (small/fast slot)",

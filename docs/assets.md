@@ -15,7 +15,7 @@ assets instead of modelling them (they are good at the first and bad at the seco
 | Poly Haven | ~520 photoreal models, ~870 textures, ~1,000 HDRIs | API index; files downloaded when first approved, cached | all CC0 |
 | ambientCG | ~2,000 PBR materials, ~430 HDRIs | API index; zips downloaded when first approved, cached | all CC0 |
 
-Not used: Quaternius (licence changed 2026-08-28), Fab/Megascans, Sonniss, mixed-licence OpenGameArt/itch packs.
+Not used: Quaternius (licence changed in 2026), Fab/Megascans, Sonniss, mixed-licence OpenGameArt/itch packs.
 Later: Freesound (CC0 filter, needs OAuth2), Sketchfab/Poly Pizza (CC0 filter).
 
 **KayKit by hand:** itch.io's robots.txt forbids automated downloads, so the studio does not script them. For each
@@ -107,5 +107,5 @@ animated files) get a WARNING when their origin lies outside the mesh: placed as
   fetched, with the licence recorded at fetch time.
 - Heavy work (Blender thumbnail batches) runs under the timer's `MemoryMax=12G`; run big manual syncs in a scope
   too: `systemd-run --user --scope -p MemoryMax=12G studio-assets sync`.
-- AI 3D generation (TRELLIS.2, evals/scorecard-gen3d-20261016.md) is the gap filler for missing props; generated
+- AI 3D generation (TRELLIS.2, evals/scorecard-gen3d.md) is the gap filler for missing props; generated
   assets go through the same review.

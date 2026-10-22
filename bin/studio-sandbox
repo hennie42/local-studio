@@ -11,10 +11,13 @@ ws=$(readlink -f "${1:?usage: studio-sandbox <project-dir> -- <command...>}"); s
 STUDIO=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
 H=$HOME
 mkdir -p "$ws/.studio" "$H/.local/share/opencode" "$H/.local/state/opencode" "$H/.cache/opencode"
-sock="$ws/.studio/llm-$$.sock"
+# the bridge socket lives in a short private dir (a unix socket path must stay under 108 bytes, project paths
+# can be longer), mounted at /run/studio-llm inside
+sockdir=$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/studio-llm.XXXXXX")
+sock="$sockdir/llm.sock"
 socat "UNIX-LISTEN:$sock,fork,unlink-early" "TCP:127.0.0.1:${LLAMA_PORT:-8080}" &
 bridge=$!
-trap 'kill $bridge 2>/dev/null; rm -f "$sock"' EXIT
+trap 'kill $bridge 2>/dev/null; rm -rf "$sockdir"' EXIT
 for _ in $(seq 1 50); do [[ -S $sock ]] && break; sleep 0.1; done
 
 args=(--die-with-parent --new-session --unshare-net --unshare-pid --unshare-ipc --unshare-uts
@@ -30,10 +33,10 @@ if [[ -e $H/.config/opencode/opencode.json ]]; then
   cfg=$(readlink -f "$H/.config/opencode/opencode.json")
   args+=(--ro-bind "$cfg" "$H/.config/opencode/opencode.json")
 fi
-args+=(--bind "$ws" "$ws" --chdir "$ws" --setenv HOME "$H"
+args+=(--bind "$sockdir" /run/studio-llm --bind "$ws" "$ws" --chdir "$ws" --setenv HOME "$H"
        --setenv PATH "$STUDIO/bin:/usr/local/bin:/usr/bin")
 # inside: bridge 127.0.0.1:8080 -> the unix socket, then run the command
-exec bwrap "${args[@]}" /usr/bin/bash -c '
+bwrap "${args[@]}" /usr/bin/bash -c '
   socat TCP-LISTEN:8080,bind=127.0.0.1,fork,reuseaddr "UNIX-CONNECT:$0" &
   for _ in $(seq 1 50); do (exec 3<>/dev/tcp/127.0.0.1/8080) 2>/dev/null && break; sleep 0.1; done
-  exec "$@"' "$sock" "$@"
+  exec "$@"' /run/studio-llm/llm.sock "$@"

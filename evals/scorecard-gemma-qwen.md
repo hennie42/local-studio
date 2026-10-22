@@ -1,9 +1,9 @@
-# Capability scorecard: Gemma 4 vs Qwen3.6, same tooling (2026-10-15)
+# Capability scorecard: Gemma 4 vs Qwen3.6, same tooling
 
-Same 14-task suite as `scorecard-20261008.md`, rerun on today's tooling: workers start with no MCP servers, Godot
+Same 14-task suite as `scorecard-suite.md`, rerun on today's tooling: workers start with no MCP servers, Godot
 jobs never unload the worker, vision tasks use the synthetic frames from `assets/make_vision_assets.py`. 2 runs per
 task, Claude Code harness, reference machine (RTX 5070 Ti 16 GB + RTX 2060 6 GB, 64 GB DDR4-3000). Qwen3.6 skipped
-long-context recall (1.00 on 2026-10-08, unchanged tooling for that direct task).
+long-context recall (1.00 in the first suite, unchanged tooling for that direct task).
 
 ## Agent tasks (10 tasks x 2 runs: coding, Unreal, Blender, ffmpeg, audio)
 
@@ -12,7 +12,7 @@ long-context recall (1.00 on 2026-10-08, unchanged tooling for that direct task)
 | **gemma4-26b-a4b** | **19/20** | **0.995** | **57** | **172** | **45K** |
 | qwen3.6-35b-a3b | 16/20 | 0.974 | 80 | 401 | 81K |
 
-- Gemma's miss: coding_2 run 1 (rounding rule, 12/14 hidden tests; Bonsai missed the same rule on 2026-10-08).
+- Gemma's miss: coding_2 run 1 (rounding rule, 12/14 hidden tests; Bonsai missed the same rule in the first suite).
 - Qwen's misses: audio in the wrong key (A minor asked), coding_2 13/14, a C++ test suite with 0 asserts after 41
   turns, a wrong light in ue_1 after 51 turns and 81K context.
 - Qwen generates faster (77.6 vs 67.8 tok/s) but needs 2.3x the turns, so Gemma finishes first.
@@ -24,9 +24,9 @@ long-context recall (1.00 on 2026-10-08, unchanged tooling for that direct task)
 | vision exposure (20 frames) | **1.00 1.00** | 0.95 0.90 |
 | vision defects (8 frames) | 1.00 1.00 | 1.00 1.00 |
 | UE log triage | 0.50 0.50 | **0.62 0.88** |
-| long-context recall | 0.95 0.90 (3/3 at 28K and 103K; extra text) | (1.00 on 2026-10-08) |
+| long-context recall | 0.95 0.90 (3/3 at 28K and 103K; extra text) | (1.00 in the first suite) |
 
-Log triage stays with Bonsai (0.88 on 2026-10-08).
+Log triage stays with Bonsai (0.88 in the first suite).
 
 ## Decision
 

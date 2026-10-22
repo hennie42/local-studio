@@ -81,7 +81,7 @@ def claude_cmd(ws, model, prompt, resume=None, small_model=None):
     argv = [str(HOME / ".local/bin/claude-local"), "-p", prompt, "--output-format", "stream-json", "--verbose",
             "--permission-mode", "acceptEdits", "--settings", json.dumps(settings),
             # no MCP servers from the user's config: they run outside the sandbox (e.g. a photo app with ~/Pictures
-            # access) and their ~100 tool definitions bloat every request (found 2026-10-14)
+            # access) and their ~100 tool definitions bloat every request
             "--strict-mcp-config", "--mcp-config", json.dumps({"mcpServers": {}})]
     if resume:
         argv += ["--resume", resume]
