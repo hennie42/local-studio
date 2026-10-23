@@ -14,6 +14,7 @@ productions. Other hardware: see [Choosing for your hardware](#choosing-for-your
 | retry / long context / log triage / look-critical steps | **Bonsai 2 27B** (Qwen3.8-27B in ternary weights, PrismML fork) | also 19/20 and 8/8 Godot, a *different* model family (a retry doesn't repeat the first one's blind spot), 188K context recall 3/3, log triage 0.88, best-looking renders by eye; ~3x slower |
 | fallback worker | Qwen3.6-35B-A3B (UD-Q4_K_XL) | 16/20 on the same tooling, 4/8 Godot; fastest tokens but 2.3x the turns |
 | quick log triage on a small second GPU | Spark-X2.5-4B | 0.56-0.75 on log triage (varies run to run) in ~20 s; never for multi-step tool work |
+| frame QA: screen every rendered frame | **Clef-Flash** (a decision model, `/v1/systemone`) | 95% on 96 real frames at 0.42 s per frame (Gemma 4: 92% at 7.3 s); missing texture, black band, black frame |
 | director | Claude (Claude Code) | plans, reviews, makes the visual calls; local workers draft and the director verifies |
 
 ## Capability suite, rerun: Gemma 4 vs Qwen3.6
@@ -93,13 +94,40 @@ Two runs per task for the three capable models (scores of run 1 and run 2):
 - **Gemma 4** solved every task with the fewest turns and smallest contexts. By eye its clip was the weakest of the
   passing ones (blown-out floor), so look-critical steps go to Bonsai.
 - **Mellum2.1** (12B, fast: 245 tok/s) mistook Claude Code's long system prompt for the user's message and replied
-  "I'm ready to help!": too small for this harness.
+  "I'm ready to help!". On a newer llama.cpp it does work as an agent (a coding bug fix passed) but still fails the
+  Godot race logic (0/21 tests), and no other role beats what we run: see [decision models](#decision-models-frame-qa-and-log-triage).
 - **Qwen3.8-27B** only fits in 16 GB as Q3 with a 49K context; Claude Code's system prompt plus the task overflow it
   and auto-compaction fails. Its scores measure the context cap, not the model. (Its own chat template also rejects
   Claude Code's `developer` role: we give it Bonsai's template, from the same model family.)
 - **Qwen3.6** did better in its second run (3/4: race logic and clip passed) after two tooling fixes between the
   runs (no stray MCP tools, no model reloads for Godot jobs), but missed the platformer both times: its autopilot
   needed most of the time limit and the export never happened.
+
+## Decision models: frame QA and log triage
+
+llama.cpp serves **decision models** on `POST /v1/systemone`: instead of generating text they answer typed questions
+(`choice`, `score` from 2-10 levels, `noul` = yes/no) about a state, with probabilities. Two sets from real
+productions (`evals/scorecard-decide.md`, code in `evals/decide/`): 96 frames (16 accepted frames from the Unreal
+trailer, NeonRain and Godot, each in 6 variants with known truth) and 98 broker job logs (Godot, Unreal, Blender;
+truth from exit codes).
+
+| model | frames: all / defects | s per frame | logs: ok / cause | s per log |
+|---|---|---|---|---|
+| **Clef-Flash** (decision, 7 GB) | **95%** / 96% | **0.42** | 84% / 79% | 0.13 |
+| H2O-Lightning-4B (decision, 3.4 GB) | 93% / 96% | 0.61 | 86% / 72% | 0.12 |
+| Gemma 4 26B-A4B (chat) | 92% / 96% | 7.3 | **94% / 89%** | 8.4 |
+| Spark-X2.5-4B (chat, 2060) | no vision | - | 90% / 87% | 0.61 |
+| Mellum2 12B Instruct (chat) | no vision | - | 83% / 86% | 0.15 |
+
+- **Frames: yes.** Clef-Flash is as accurate as Gemma 4 and ~17x faster, so it can check *every* frame of a render
+  (a 1440-frame trailer in ~10 min) and flag the ones worth a look; it was right on every frame where it was
+  confident (>= 0.8) about a defect. Exposure is the weak question for every model (dark-by-design night shots, flat
+  UI screens): it needs a reference frame per shot.
+- **Logs: no.** Our logs carry markers (`GODOT_CHECK n failed`, `GAME_END`, exit codes) that answer "did it work"
+  exactly, and chat models name the cause better than any decision model.
+- **Mellum2** (JetBrains, 12B-A2.5B) is fast and competent at short single-shot tasks, but in every role we have
+  (agent worker, UE log triage, log classification, long context, the small model beside the worker) a model we
+  already run is as good or better. Mellum2.1 Thinking often reasons past a 4K answer budget on long inputs.
 
 ## What production taught us (beyond the suites)
 

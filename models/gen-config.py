@@ -99,6 +99,8 @@ def opencode(prof):
     models = {}
     for mid in prof.get("big", []) + prof.get("small", []):
         m = model(mid, prof)
+        if m.get("decision"):   # decision models answer /v1/systemone only, no chat
+            continue
         models[mid] = {"name": m["name"], "tool_call": True, "reasoning": True,
                        "limit": {"context": m["ctx"], "output": min(32768, m["ctx"] // 4)},
                        "modalities": {"input": ["text", "image"] if m.get("vision") else ["text"], "output": ["text"]},

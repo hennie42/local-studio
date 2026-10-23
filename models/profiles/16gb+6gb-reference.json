@@ -6,7 +6,8 @@
     "gemma4-26b-a4b",
     "mellum2.1-12b",
     "bonsai2-27b-32k",
-    "qwen3.6-35b-a3b"
+    "qwen3.6-35b-a3b",
+    "clef-flash"
   ],
   "small": [
     "spark-4b",
@@ -44,6 +45,11 @@
       "model": "gemma4-26b-a4b",
       "why": "synthetic frames: exposure 20/20 twice, defects 8/8 twice (Qwen3.6: 0.93 / 1.00). Pre-screen only: Claude makes the call"
     },
+    "frame_qa": {
+      "model": "clef-flash",
+      "endpoint": "/v1/systemone",
+      "why": "decision model: 96 real frames (UE trailer, NeonRain, Godot game and suite shots, 6 controlled variants each): 95% at 0.42 s/frame (defects 96%, black 99%, exposure 89%); Gemma 4 26B 92% at 7.3 s. Right on every frame where it was >= 0.8 confident about a defect. Use it to screen every rendered frame and flag the rest for a look; exposure is unreliable on dark-by-design and UI frames. Not for logs (79% of causes; Spark 87%). evals/scorecard-decide.md"
+    },
     "small_model": "spark-4b",
     "never_delegate_to_small_models": [
       "multi-step tool work",
@@ -79,7 +85,7 @@
       },
       "not_recommended": {
         "qwen3.6-35b-a3b": "4/8 over 2 runs (rep 2: 3/4 after the tooling fixes): fails the platformer (autopilot timing + time limit)",
-        "mellum2.1-12b": "0/4: loses the task inside Claude Code's long system prompt (12B too small for this harness)",
+        "mellum2.1-12b": "0/4 on an older llama.cpp; on the current one a coding bug fix passes but Godot race logic fails (0/21 tests). Fast, but every role it could take is already covered as well or better (evals/scorecard-decide.md)",
         "qwen3.8-27b-q3": "1/4: limited by the 49K context that fits in 16 GB (template fixed)"
       },
       "scorecard": "evals/scorecard-godot.md"

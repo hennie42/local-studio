@@ -161,7 +161,10 @@ files the worker is touching.
 - Water: a shader plane (shore-distance field, panned normals), not the Water plugin, which renders nothing headless
   (F3). Manual exposure needs "apply physical camera exposure" off (`su.post_process` does it; F2).
 - Preview: 960x540, 1 temporal sample. QA by eye: exposure, framing, black frames, missing-texture checkerboards,
-  popping, camera through geometry. Local vision models can pre-screen frames, but you make the call.
+  popping, camera through geometry. Local vision models can pre-screen frames, but you make the call. To check every
+  frame of a render, ask the decision model `clef-flash` (`POST 127.0.0.1:8080/v1/systemone`, ~0.4 s per frame;
+  request shape in `evals/decide/run.py`): it flags missing textures, black bands and black frames reliably, exposure
+  less so. Look at what it flags, plus a sample.
 - Final: 1920x1080 (or as briefed), 8 temporal samples, warm-up 60/32. Then `studio encode`, then mux audio:
   `ffmpeg -i out/film_video.mp4 -i audio/score.wav -c:v copy -c:a aac -b:a 192k -shortest out/<Name>.mp4`.
 - Audio is procedural Python (numpy/scipy) per AGENTS.md: score + SFX timed to the shot list; peaks < -1 dBFS.
