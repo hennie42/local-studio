@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""Run a long job as a systemd user unit with a memory cap, so the dashboard (studio-status) can see it.
+
+  studio-job <name> [--mem 40G] [--project DIR] -- <command> [args...]
+  studio-job list                      # the jobs studio-status shows
+  studio-job stop <name>
+
+The unit is studio-job-<name>; output goes to $STUDIO_EVAL_HOME/jobs/<name>.log, the exit code to <name>.exit and
+the start, command and project to <name>.json. The memory cap is the default because an unbounded analysis once
+got the terminal OOM-killed (twice). The command runs in the current directory.
+"""
+import datetime
+import json
+import os
+import pathlib
+import re
+import shlex
+import subprocess
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+from studio_config import path as cfg_path  # noqa: E402
+
+JOBS = cfg_path("STUDIO_EVAL_HOME") / "jobs"
+WRAP = 'log=$1; ex=$2; shift 2; "$@" >>"$log" 2>&1; echo $? >"$ex"'
+
+
+def unit(name):
+    return f"studio-job-{name}.service"
+
+
+def active(name):
+    return subprocess.run(["systemctl", "--user", "is-active", "-q", unit(name)]).returncode == 0
+
+
+def main():
+    argv = sys.argv[1:]
+    if not argv or argv[0] in ("-h", "--help"):
+        print(__doc__.strip())
+        return 0
+    if argv[0] == "list":
+        for f in sorted(JOBS.glob("*.json")):
+            m = json.loads(f.read_text())
+            state = "running" if active(m["name"]) else (JOBS / f"{m['name']}.exit").read_text().strip() \
+                if (JOBS / f"{m['name']}.exit").exists() else "killed"
+            print(f"{m['name']:24} {state:8} {m['start']}  {m['command'][:80]}")
+        return 0
+    if argv[0] == "stop" and len(argv) == 2:
+        return subprocess.run(["systemctl", "--user", "stop", unit(argv[1])]).returncode
+    if "--" not in argv:
+        sys.exit("usage: studio-job <name> [--mem 40G] [--project DIR] -- <command> [args...]")
+    head, cmd = argv[:argv.index("--")], argv[argv.index("--") + 1:]
+    name, opts = head[0], head[1:]
+    if not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", name) or not cmd:
+        sys.exit("studio-job: name must be [A-Za-z0-9_.-]{1,64} and a command is required")
+    mem = opts[opts.index("--mem") + 1] if "--mem" in opts else "40G"
+    project = str(pathlib.Path(opts[opts.index("--project") + 1]).resolve()) if "--project" in opts else None
+    if active(name):
+        sys.exit(f"studio-job: {unit(name)} is already running (studio-job stop {name})")
+    subprocess.run(["systemctl", "--user", "reset-failed", unit(name)], stderr=subprocess.DEVNULL)
+    JOBS.mkdir(parents=True, exist_ok=True)
+    log, ex = JOBS / f"{name}.log", JOBS / f"{name}.exit"
+    ex.unlink(missing_ok=True)
+    start = datetime.datetime.now().isoformat(timespec="seconds")
+    with log.open("a") as f:
+        f.write(f"\n== studio-job {name} {start}: {shlex.join(cmd)}\n")
+    meta = {"name": name, "command": shlex.join(cmd), "cwd": os.getcwd(), "project": project, "mem": mem,
+            "start": start, "log": str(log), "unit": unit(name)}
+    (JOBS / f"{name}.json").write_text(json.dumps(meta, indent=1) + "\n")
+    r = subprocess.run(["systemd-run", "--user", "--collect", "--same-dir", f"--unit={unit(name)}",
+                        "-p", f"MemoryMax={mem}", "-p", "MemorySwapMax=0", "--quiet",
+                        "bash", "-c", WRAP, "studio-job", str(log), str(ex), *cmd])
+    if r.returncode == 0:
+        print(f"started {unit(name)} (MemoryMax={mem}); log {log}")
+    return r.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())

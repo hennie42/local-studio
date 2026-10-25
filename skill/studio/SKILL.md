@@ -122,6 +122,13 @@ time -> `studio godot-movie` -> `studio encode` -> mux.
 - A ticket names **every code path that triggers its behaviour** (player input, the autopilot, tools) and the data
   each one passes (T18: autopilot moves carry no `opened` list, so a spec that read only that missed every
   autopilot explosion).
+- **Bots never work around a state the rules can't reach.** If the solver or autopilot finds a "dead" board (no
+  legal move, game not over), it fails loudly with a marker that fails the check, and the rules get a test.
+  DontPanicIsland's solver quietly forced a loss there, which hid an off-by-one in the win check until a review
+  after release (F45).
+- **Rules tests cover the ends:** the game ending partway through a move (a chord or flood reaches the last life),
+  a win after a loss, and a move that would both win and lose. **Menu probes press real keys** (`ProbeBase.press`
+  / `hold`): every key closes what it opened and nothing behind a menu or a text field reacts (F46, F47, F48).
 - During a project, append a finding to `retros/<Project>/findings.jsonl` with every fix
   (docs/self-improvement-design.md); at the end run `studio-retro <project>` and turn the open guards into guards.
 

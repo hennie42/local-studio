@@ -3,7 +3,7 @@
 
 Flags Godot 3 idioms in Godot 4 projects (.gd scripts and .tscn/.tres files): the main failure mode of LLM-written
 GDScript. Also flags Godot 4 pitfalls that compile but misbehave (anchor-grow, fullrect-mouse, null-cast,
-label3d-theme; from the Don't Panic Island retro). Prints `file:line: [rule] message -> fix` and exits 1 if anything was found. Godot's own parser stops at the
+label3d-theme, substr-prefix, trig-degrees, fileaccess-null; from the Don't Panic Island retro). Prints `file:line: [rule] message -> fix` and exits 1 if anything was found. Godot's own parser stops at the
 first error per file; this lists all of them. Run before every scene run (studio godot-check does both).
 """
 import os
@@ -129,7 +129,8 @@ def lint_gd(path, text):
 # Godot 4 pitfalls that compile but misbehave (retros/DontPanicIsland/findings.jsonl): each cost a playtest round
 NOT_TOP_LEFT = re.compile(r"(\w[\w.]*)\.set_anchors(?:_and_offsets)?_preset\(\s*Control\.PRESET_([A-Z_]+)\s*\)")
 TOP_LEFT_PRESETS = {"TOP_LEFT", "TOP_WIDE", "LEFT_WIDE", "FULL_RECT"}
-PITFALL_RULES = {"anchor-grow", "fullrect-mouse", "null-cast", "label3d-theme"}
+PITFALL_RULES = {"anchor-grow", "fullrect-mouse", "null-cast", "label3d-theme", "substr-prefix", "trig-degrees",
+                 "fileaccess-null"}
 # fatal now that all projects are clean; GODOT_LINT_PITFALLS_FATAL=0 turns them into warnings, e.g. while a
 # worker run is in progress and a new rule would trip it on files outside its ticket
 PITFALLS_FATAL = os.environ.get("GODOT_LINT_PITFALLS_FATAL", "1") == "1"
@@ -172,6 +173,31 @@ def lint_pitfalls(lines):
                 hits.append((ln, "label3d-theme", f"`{var}` is a Label3D: add_theme_*_override is Control-only (a "
                              f"runtime error) -> set its properties: font, font_size, modulate, outline_modulate, "
                              f"outline_size"))
+        # strings are blanked in `code`; the prefix literal comes from the raw line
+        m = re.search(r"(\w+)\.begins_with\(\s*\"([^\"\\]*)\"\s*\)", strip_comment(lines[n]))
+        if m:
+            var, prefix = m.group(1), m.group(2)
+            for k in range(n, min(n + 4, len(code))):
+                if k > n and ".begins_with(" in code[k]:
+                    break   # the next branch tests its own prefix
+                s = re.search(r"\b" + re.escape(var) + r"\.substr\(\s*(\d+)\s*[,)]", code[k])
+                if s and int(s.group(1)) != len(prefix):
+                    hits.append((k + 1, "substr-prefix", f"`{var}.substr({s.group(1)})` after "
+                                 f"`begins_with(\"{prefix}\")`, which is {len(prefix)} characters (--seed= took "
+                                 f"substr(6)) -> `{var}.trim_prefix(\"{prefix}\")`"))
+        if re.search(r"\b(rad_to_deg\s*\(\s*deg_to_rad|deg_to_rad\s*\(\s*rad_to_deg)\s*\(", c) or \
+                re.search(r"\b(sin|cos|tan)\s*\(\s*rad_to_deg\s*\(", c):
+            hits.append((ln, "trig-degrees", "a degree/radian round trip or degrees into sin/cos (they take radians: "
+                         "the crew spots came out random) -> `var a := deg_to_rad(DEGREES)` then `cos(a)`, `sin(a)`"))
+        m = re.search(r"\bvar\s+(\w+)\s*(?::\s*FileAccess\s*)?:?=\s*FileAccess\.open\(", c)
+        if m:
+            var = m.group(1)
+            if not re.search(r"(\b" + re.escape(var) + r"\s*[!=]=\s*null\b|\bnot\s+" + re.escape(var) + r"\b|\bif\s+"
+                             + re.escape(var) + r"\s*:|\b" + re.escape(var) + r"\.is_open\(|\bis_instance_valid\(\s*"
+                             + re.escape(var) + r"\s*\))", "\n".join(code[n + 1:n + 4])):
+                hits.append((ln, "fileaccess-null", f"`{var}` is null when the file can't be opened (missing, or no "
+                             f"writable user:// in a private browser window) -> `if {var} == null:` before using it "
+                             f"(FileAccess.get_open_error() says why)"))
     return hits
 
 

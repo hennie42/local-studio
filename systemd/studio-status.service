@@ -1,0 +1,13 @@
+[Unit]
+Description=studio-status: progress dashboard on the LAN (port 8767, token; docs/dashboard.md)
+After=network-online.target
+
+[Service]
+ExecStart=%h/.local/bin/studio-status
+Restart=on-failure
+RestartSec=5
+MemoryMax=1G
+Nice=10
+
+[Install]
+WantedBy=default.target

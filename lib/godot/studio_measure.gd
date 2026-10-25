@@ -14,6 +14,10 @@ func _init() -> void:
 	for p in paths:
 		out[p] = _measure(p)
 	var f := FileAccess.open(args[1], FileAccess.WRITE)
+	if f == null:
+		push_error("studio_measure: can't write %s (%s)" % [args[1], error_string(FileAccess.get_open_error())])
+		quit(1)
+		return
 	f.store_string(JSON.stringify(out))
 	f.close()
 	quit()

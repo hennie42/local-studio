@@ -142,6 +142,7 @@ run systemctl --user daemon-reload
 run systemctl --user enable --now studio-broker.service
 ((godot)) && run systemctl --user enable --now godot-refresh.timer
 run systemctl --user enable --now studio-assets-sync.timer
+run systemctl --user enable --now studio-status.service   # progress dashboard (port 8767; docs/dashboard.md)
 
 # ---------------------------------------------------------------- 6. local models
 if ((local)); then

@@ -1,7 +1,6 @@
 # Progress dashboard: design
 
-**Status: designed, not built.** Decided in a `/grilling` interview. Build after the Don't
-Panic Island playtest, and only on the user's go-ahead.
+**Status: built** (usage and the JSON contract: [dashboard.md](dashboard.md)). Decided in a `/grilling` interview.
 
 **Goal:** the user can always see what the studio is doing and what is left, from this machine or a phone on the
 home network, without asking the director. Today that takes reading logs, `studio-dispatch status` and HANDOFF.md.
@@ -13,11 +12,11 @@ home network, without asking the director. Today that takes reading logs, `studi
 | Purpose | Watch everything. The only control is **Pause / Resume**, on jobs that support it. Retrying or marking tickets, starting runs and stopping units stay with the director and the CLI. |
 | Stack | `bin/studio-status`: a Python stdlib HTTP server and one HTML/CSS/JS file (vanilla, no build step, no CDN), like the asset review page. The page polls `/api/status` every 5 s; the JSON is the contract, so a Svelte page could replace it later. |
 | Running | Always on: a systemd user service like the broker. It only reads files. `studio-status --once` prints the same summary as text (terminal, the director's monitors, the status line). |
-| Access | Home network (LAN), plain HTTP, port **8766**, listening on all interfaces. |
-| Protection | A random token in `~/.config/studio/dashboard-token`. `studio-status url` prints the link with the token; the first visit sets a cookie; requests without it get 403. A ufw rule limits the port to the home subnet (the user runs it, it needs sudo): `sudo ufw allow from 10.0.0.0/24 to any port 8766 proto tcp`. TLS is not worth a self-signed certificate for a status page on a WPA2/3 network. |
+| Access | Home network (LAN), plain HTTP, port **8767** (8766 is `studio-serve`'s), listening on all interfaces. |
+| Protection | A random token in `~/.config/studio/dashboard-token`. `studio-status url` prints the link with the token; the first visit sets a cookie; requests without it get 403. A ufw rule limits the port to the home subnet (the user runs it, it needs sudo): `sudo ufw allow from 10.0.0.0/24 to any port 8767 proto tcp`. TLS is not worth a self-signed certificate for a status page on a WPA2/3 network. |
 | Layout | Phone first, one column: now strip with Pause, ETA, Local share, ticket board (compact list), feed, studio queue. Desktop: the same panels in a grid. |
 | Scope | Every long job in the studio, not only dispatcher projects: dispatcher runs, comparison clips, eval suites, gen3d runs, the weekly syncs. Dispatcher projects also get the ticket board. |
-| Job launcher | New `studio-job <name> [--mem 40G] -- <command>`: runs the unit `studio-job-<name>` with a memory cap (the oomd lesson becomes the default), logs to `/home/user/StudioProjects/evals/jobs/<name>.log`, records start, command and project. The dashboard lists these units (state, runtime, last log line). The director launches every long job through it. |
+| Job launcher | New `studio-job <name> [--mem 40G] -- <command>`: runs the unit `studio-job-<name>` with a memory cap (the oomd lesson becomes the default), logs to `$STUDIO_EVAL_HOME/jobs/<name>.log`, records start, command and project. The dashboard lists these units (state, runtime, last log line). The director launches every long job through it. |
 | What's left | New `queue.json` in the repo (item, status, estimate, depends-on, needs-user), kept current by the director. HANDOFF.md points to it instead of repeating the list. The dashboard shows it with the estimates added up. |
 | ETA | Remaining tickets x the project's median minutes per ticket so far, plus a worst case (each failing ticket: up to 3 attempts at its timeout). Shown as "done ~21:40 (worst case 01:10)"; amber when the worst case passes 23:00, the user's usual shutdown. |
 | Pause | A button per job that supports it: dispatcher projects (`<project>/.studio/PAUSE`, stops between tickets) and eval/clip runs (`$STUDIO_EVAL_HOME/runs/PAUSE`). No button for jobs without a pause mechanism. Resume removes the file; a paused dispatcher is not restarted automatically, the page shows the command. |

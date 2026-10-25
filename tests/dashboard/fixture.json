@@ -1,0 +1,2300 @@
+{
+ "version": 1,
+ "time": "2026-10-23T20:41:05",
+ "active_project": "DontPanicIsland",
+ "projects": [
+  {
+   "name": "DontPanicIsland",
+   "path": "/home/me/StudioProjects/godot/DontPanicIsland",
+   "engine": "godot",
+   "paused": false,
+   "steps": [
+    {
+     "id": "T02",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 271.9,
+     "time": "2026-10-17T14:37:45",
+     "note": "dispatcher first; check pass"
+    },
+    {
+     "id": "T03",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 268.3,
+     "time": "2026-10-17T14:42:18",
+     "note": "dispatcher first; check pass"
+    },
+    {
+     "id": "T04",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 1179.0,
+     "time": "2026-10-17T15:02:05",
+     "note": "dispatcher first; check pass"
+    },
+    {
+     "id": "T05",
+     "attempts": 3,
+     "status": "pass",
+     "by": "local",
+     "model": "bonsai2-27b",
+     "first_try": false,
+     "local_seconds": 7007.2,
+     "time": "2026-10-17T16:59:10",
+     "note": "dispatcher retry; check pass"
+    },
+    {
+     "id": "T06",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 637.5,
+     "time": "2026-10-17T17:09:52",
+     "note": "dispatcher first; check pass"
+    },
+    {
+     "id": "T07",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 260.3,
+     "time": "2026-10-17T17:14:17",
+     "note": "dispatcher first; check pass"
+    },
+    {
+     "id": "T08",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 525.7,
+     "time": "2026-10-17T17:23:07",
+     "note": "dispatcher first; check pass"
+    },
+    {
+     "id": "T09",
+     "attempts": 3,
+     "status": "pass",
+     "by": "local",
+     "model": "bonsai2-27b",
+     "first_try": false,
+     "local_seconds": 6078.0,
+     "time": "2026-10-17T19:05:29",
+     "note": "dispatcher retry; check pass"
+    },
+    {
+     "id": "T10",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 1510.2,
+     "time": "2026-10-17T19:30:59",
+     "note": "dispatcher first; check pass"
+    },
+    {
+     "id": "T11",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 1359.1,
+     "time": "2026-10-17T19:54:07",
+     "note": "dispatcher first; check pass"
+    },
+    {
+     "id": "T12",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 395.2,
+     "time": "2026-10-17T20:01:10",
+     "note": "dispatcher first; check pass"
+    },
+    {
+     "id": "T13",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 2372.5,
+     "time": "2026-10-17T20:41:03",
+     "note": "dispatcher first; check pass"
+    },
+    {
+     "id": "T14",
+     "attempts": 3,
+     "status": "pass",
+     "by": "local",
+     "model": "bonsai2-27b",
+     "first_try": false,
+     "local_seconds": 7200.0,
+     "time": "2026-10-17T22:46:40",
+     "note": "dispatcher retry; check pass"
+    },
+    {
+     "id": "T15",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 542.4,
+     "time": "2026-10-18T08:20:05",
+     "note": "dispatcher first; check pass"
+    },
+    {
+     "id": "T16",
+     "attempts": 1,
+     "status": "failing",
+     "by": null,
+     "model": "gemma4-26b-a4b",
+     "first_try": false,
+     "local_seconds": 2400.0,
+     "time": "2026-10-18T15:58:13",
+     "note": "dispatcher first; check fail"
+    },
+    {
+     "id": "T17",
+     "attempts": 2,
+     "status": "pass",
+     "by": "local",
+     "model": "bonsai2-27b",
+     "first_try": false,
+     "local_seconds": 4376.6,
+     "time": "2026-10-18T17:44:24",
+     "note": "dispatcher retry; check pass"
+    },
+    {
+     "id": "T18",
+     "attempts": 2,
+     "status": "pass",
+     "by": "local",
+     "model": "bonsai2-27b",
+     "first_try": false,
+     "local_seconds": 4800.0,
+     "time": "2026-10-18T19:05:31",
+     "note": "dispatcher retry; check pass"
+    },
+    {
+     "id": "T19",
+     "attempts": 2,
+     "status": "pass",
+     "by": "local",
+     "model": "bonsai2-27b",
+     "first_try": false,
+     "local_seconds": 4800.0,
+     "time": "2026-10-18T20:27:45",
+     "note": "dispatcher retry; check pass"
+    }
+   ],
+   "steps_line": {
+    "done": 17,
+    "local": 17,
+    "first_try": 11,
+    "after_retry": 6,
+    "escalated": 0,
+    "director": 0,
+    "text": "17 of 17 steps done locally: 11 first try, 6 after retry, 0 escalated"
+   },
+   "workers": [
+    {
+     "step": "T15",
+     "attempt": 2,
+     "model": "bonsai2-27b",
+     "pid": 4242,
+     "started": "2026-10-23T20:22:00",
+     "elapsed_s": 1145,
+     "timeout_s": 2400,
+     "silent_s": 40,
+     "resume": false
+    }
+   ],
+   "gpu_pending": [
+    {
+     "id": "20261023-204010-ab12cd",
+     "action": "godot-play",
+     "args": [
+      "scenes/main.tscn",
+      "--autopilot"
+     ],
+     "since": "2026-10-23T20:40:10"
+    }
+   ],
+   "gpu_recent": [
+    {
+     "id": "20261022-180539-d951e4",
+     "action": "godot-export",
+     "exit": 0,
+     "seconds": 3.3,
+     "time": "2026-10-22T18:05:39",
+     "args": [
+      "web"
+     ]
+    },
+    {
+     "id": "20261022-181033-be0ce6",
+     "action": "godot-check",
+     "exit": 0,
+     "seconds": 3.8,
+     "time": "2026-10-22T18:10:33",
+     "args": []
+    },
+    {
+     "id": "20261022-181041-c54a2a",
+     "action": "godot-play",
+     "exit": 0,
+     "seconds": 16.9,
+     "time": "2026-10-22T18:10:41",
+     "args": [
+      "tests/play_life.tscn",
+      "30"
+     ]
+    },
+    {
+     "id": "20261022-181102-a09bbb",
+     "action": "godot-play",
+     "exit": 0,
+     "seconds": 16.8,
+     "time": "2026-10-22T18:11:02",
+     "args": [
+      "tests/play_life.tscn",
+      "30"
+     ]
+    },
+    {
+     "id": "20261022-181127-95afb3",
+     "action": "godot-export",
+     "exit": 0,
+     "seconds": 3.0,
+     "time": "2026-10-22T18:11:27",
+     "args": [
+      "web"
+     ]
+    },
+    {
+     "id": "20261022-182108-bc12f3",
+     "action": "godot-import",
+     "exit": 0,
+     "seconds": 3.2,
+     "time": "2026-10-22T18:21:08",
+     "args": []
+    },
+    {
+     "id": "20261022-182112-83ee6d",
+     "action": "godot-play",
+     "exit": 0,
+     "seconds": 6.8,
+     "time": "2026-10-22T18:21:12",
+     "args": [
+      "tests/play_life.tscn",
+      "90"
+     ]
+    },
+    {
+     "id": "20261022-185409-254197",
+     "action": "godot-export",
+     "exit": 0,
+     "seconds": 3.4,
+     "time": "2026-10-22T18:54:09",
+     "args": [
+      "web"
+     ]
+    }
+   ],
+   "board": [
+    {
+     "id": "T02",
+     "title": "Board core: mines, numbers, flood fill",
+     "status": "pass",
+     "owner": "local",
+     "deps": [],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "pass",
+       "minutes": 4.6
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 4.6,
+     "commit": "af4abf9"
+    },
+    {
+     "id": "T03",
+     "title": "Territory, flags, chording, turns",
+     "status": "pass",
+     "owner": "local",
+     "deps": [
+      "T02"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "pass",
+       "minutes": 4.6
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 4.6,
+     "commit": "3a073b7"
+    },
+    {
+     "id": "T04",
+     "title": "Crew, resources, tools, win/lose, score",
+     "status": "pass",
+     "owner": "local",
+     "deps": [
+      "T03"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "pass",
+       "minutes": 19.8
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 19.8,
+     "commit": "e420761"
+    },
+    {
+     "id": "T05",
+     "title": "Solver bot",
+     "status": "pass",
+     "owner": "local",
+     "deps": [
+      "T04"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "fail",
+       "minutes": 40.1
+      },
+      {
+       "n": 2,
+       "kind": "followup",
+       "model": "gemma4-26b-a4b",
+       "check": "fail",
+       "minutes": 40.1
+      },
+      {
+       "n": 3,
+       "kind": "retry",
+       "model": "bonsai2-27b",
+       "check": "pass",
+       "minutes": 36.9
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 117.1,
+     "commit": "6e94816"
+    },
+    {
+     "id": "T06",
+     "title": "Board view",
+     "status": "pass",
+     "owner": "local",
+     "deps": [
+      "T04"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "pass",
+       "minutes": 10.7
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 10.7,
+     "commit": "375c24b"
+    },
+    {
+     "id": "T07",
+     "title": "Camera rig",
+     "status": "pass",
+     "owner": "local",
+     "deps": [],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "pass",
+       "minutes": 4.4
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 4.4,
+     "commit": "e5d558e"
+    },
+    {
+     "id": "T08",
+     "title": "HUD",
+     "status": "pass",
+     "owner": "local",
+     "deps": [
+      "T04"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "pass",
+       "minutes": 8.8
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 8.8,
+     "commit": "9d91157"
+    },
+    {
+     "id": "T09",
+     "title": "Game controller, input, autopilot",
+     "status": "pass",
+     "owner": "local",
+     "deps": [
+      "T05",
+      "T06",
+      "T07",
+      "T08"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "fail",
+       "minutes": 40.4
+      },
+      {
+       "n": 2,
+       "kind": "followup",
+       "model": "gemma4-26b-a4b",
+       "check": "fail",
+       "minutes": 40.4
+      },
+      {
+       "n": 3,
+       "kind": "retry",
+       "model": "bonsai2-27b",
+       "check": "pass",
+       "minutes": 21.7
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 102.4,
+     "commit": "f4baab7"
+    },
+    {
+     "id": "T10",
+     "title": "Help, Esc menu, tips",
+     "status": "pass",
+     "owner": "local",
+     "deps": [
+      "T09"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "pass",
+       "minutes": 25.5
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 25.5,
+     "commit": "89cd052"
+    },
+    {
+     "id": "C1",
+     "title": "Whale and petunias models (director)",
+     "status": "pass",
+     "owner": "claude",
+     "deps": [],
+     "attempts": [],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 0.0,
+     "commit": null
+    },
+    {
+     "id": "T11",
+     "title": "Intro: Grumbleflox mines the island",
+     "status": "pass",
+     "owner": "local",
+     "deps": [
+      "T09",
+      "C1"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "pass",
+       "minutes": 23.1
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 23.1,
+     "commit": "98de469"
+    },
+    {
+     "id": "T12",
+     "title": "Win and lose screens",
+     "status": "pass",
+     "owner": "local",
+     "deps": [
+      "T09"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "pass",
+       "minutes": 7.0
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 7.0,
+     "commit": "8115a85"
+    },
+    {
+     "id": "T13",
+     "title": "Music and sound effects",
+     "status": "pass",
+     "owner": "local",
+     "deps": [
+      "T10",
+      "T11",
+      "T12"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "pass",
+       "minutes": 39.9
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 39.9,
+     "commit": "a666e8a"
+    },
+    {
+     "id": "T14",
+     "title": "Camp, crew and beach dressing",
+     "status": "escalated",
+     "owner": "local",
+     "deps": [
+      "T09"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "fail",
+       "minutes": 42.6
+      },
+      {
+       "n": 2,
+       "kind": "followup",
+       "model": "gemma4-26b-a4b",
+       "check": "fail",
+       "minutes": 42.6
+      },
+      {
+       "n": 3,
+       "kind": "retry",
+       "model": "bonsai2-27b",
+       "check": "pass",
+       "minutes": 40.5
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 125.6,
+     "commit": null
+    },
+    {
+     "id": "T15",
+     "title": "Exports and packaged autopilot",
+     "status": "running",
+     "owner": "local",
+     "deps": [
+      "T13",
+      "T14"
+     ],
+     "attempts": [
+      {
+       "n": 1,
+       "kind": "first",
+       "model": "gemma4-26b-a4b",
+       "check": "fail",
+       "minutes": 40.2
+      }
+     ],
+     "max_attempts": 3,
+     "timeout": 3000,
+     "minutes": 40.2,
+     "commit": null
+    },
+    {
+     "id": "T16",
+     "title": "Ambient life: palms sway, fog drifts, gulls, camp smoke",
+     "status": "pending",
+     "owner": "local",
+     "deps": [
+      "T15"
+     ],
+     "attempts": [],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 0,
+     "commit": null
+    },
+    {
+     "id": "T17",
+     "title": "Dig effects: ripple, pop, sand bursts",
+     "status": "pending",
+     "owner": "local",
+     "deps": [
+      "T16"
+     ],
+     "attempts": [],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 0,
+     "commit": null
+    },
+    {
+     "id": "T18",
+     "title": "Mine and towel effects: flash, smoke, sparks, shake, towel bounce",
+     "status": "pending",
+     "owner": "local",
+     "deps": [
+      "T17"
+     ],
+     "attempts": [],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 0,
+     "commit": null
+    },
+    {
+     "id": "T19",
+     "title": "Treasure effects: sparkle, flying coins, counting gold",
+     "status": "pending",
+     "owner": "local",
+     "deps": [
+      "T18"
+     ],
+     "attempts": [],
+     "max_attempts": 3,
+     "timeout": 2400,
+     "minutes": 0,
+     "commit": null
+    }
+   ],
+   "eta": {
+    "remaining": 5,
+    "median_min": 14.5,
+    "likely_min": 66,
+    "worst_min": 640,
+    "done": "2026-10-23T21:47:05",
+    "worst": "2026-10-24T07:21:05",
+    "amber": true,
+    "running": true
+   },
+   "dispatcher": true,
+   "can_pause": true,
+   "image": {
+    "path": "/home/me/StudioProjects/godot/DontPanicIsland/out/stats_qr.png",
+    "time": "2026-10-22T22:23:45"
+   },
+   "resume_cmd": "studio-job DontPanicIsland-dispatch --project /home/me/StudioProjects/godot/DontPanicIsland -- studio-dispatch /home/me/StudioProjects/godot/DontPanicIsland run",
+   "counts": {
+    "pass": 13,
+    "escalated": 1,
+    "running": 1,
+    "pending": 4
+   },
+   "last_activity": "2026-10-23T20:41:00",
+   "active": true
+  },
+  {
+   "name": "MoebiusAirship",
+   "path": "/home/me/StudioProjects/unreal/MoebiusAirship",
+   "engine": "unreal",
+   "paused": false,
+   "steps": [
+    {
+     "id": "1",
+     "attempts": 2,
+     "status": "pass",
+     "by": "escalated",
+     "model": "gemma4-26b-a4b",
+     "first_try": false,
+     "local_seconds": 1445.9,
+     "time": "2026-10-23T15:05:08",
+     "note": "fixed double radians on fin roll, larger quad fins from the cone surface, real exhaust join; worker did the rest of the model"
+    },
+    {
+     "id": "2",
+     "attempts": 2,
+     "status": "pass",
+     "by": "escalated",
+     "model": "gemma4-26b-a4b",
+     "first_try": false,
+     "local_seconds": 3900.0,
+     "time": "2026-10-23T16:14:37",
+     "note": "fixed export loop (per-object files, name collisions), removed junk; worker did scrub, clouds (bisect/centre), plume rope, gondola tips"
+    },
+    {
+     "id": "4",
+     "attempts": 2,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": false,
+     "local_seconds": 1106.4,
+     "time": "2026-10-23T16:38:43",
+     "note": "worker built materials, sky, look-test level and render (retry fixed 0-255 colours, layout, custom-depth proxy); director tuned the HLSL (slope-normalised depth"
+    },
+    {
+     "id": "3",
+     "attempts": 1,
+     "status": "pass",
+     "by": "escalated",
+     "model": "gemma4-26b-a4b",
+     "first_try": false,
+     "local_seconds": 1800.0,
+     "time": "2026-10-23T17:12:00",
+     "note": "removed the pilot material block, fixed the check printout; worker wrote the import + 15-slot material mapping"
+    },
+    {
+     "id": "5",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 274.1,
+     "time": "2026-10-23T17:24:57",
+     "note": "worker built the level to spec in 4.6 min; director fixed own ticket error (mesa scale 4000-9000 -> 50-120) and art-directed: cloud banks on the horizon, sparse"
+    },
+    {
+     "id": "6",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 369.8,
+     "time": "2026-10-23T17:34:30",
+     "note": "worker built the sequence to spec in 6 min (900 frames). Director: proxy mobility set before attach (step-5 code left a ghost airship), S5 camera moved back (ti"
+    },
+    {
+     "id": "8",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 705.8,
+     "time": "2026-10-23T17:52:37",
+     "note": "worker wrote score + check (D Lydian chords, glide, fire, chimes, whoosh) in 12 min; director moved the fade-out 25.0 -> 28.5 s (it swallowed the S5 climax) and"
+    },
+    {
+     "id": "9",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-23T18:18:01",
+     "note": "final render in 5 chunks (cutcheck OK), clef-flash on 900 frames, H.264 encode + mux"
+    },
+    {
+     "id": "7",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-23T18:18:01",
+     "note": "preview QA: clef-flash 900 frames, 0 defects; S1 overexposure flag fixed (linear sand, tilt)"
+    }
+   ],
+   "steps_line": {
+    "done": 9,
+    "local": 4,
+    "first_try": 3,
+    "after_retry": 1,
+    "escalated": 3,
+    "director": 2,
+    "text": "4 of 9 steps done locally: 3 first try, 1 after retry, 3 escalated, 2 director-owned"
+   },
+   "workers": [],
+   "gpu_pending": [],
+   "gpu_recent": [
+    {
+     "id": "20261023-175409-b7b6fa",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 11.7,
+     "time": "2026-10-23T17:54:09",
+     "args": [
+      "MoebiusAirship.uproject",
+      "Scripts/build_env.py"
+     ]
+    },
+    {
+     "id": "20261023-175421-c62055",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 10.0,
+     "time": "2026-10-23T17:54:21",
+     "args": [
+      "MoebiusAirship.uproject",
+      "Scripts/build_seq.py"
+     ]
+    },
+    {
+     "id": "20261023-175432-82bb64",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 57.6,
+     "time": "2026-10-23T17:54:32",
+     "args": [
+      "MoebiusAirship.uproject",
+      "/Game/Render/FinalS1.FinalS1"
+     ]
+    },
+    {
+     "id": "20261023-175530-c9cbd4",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 57.9,
+     "time": "2026-10-23T17:55:30",
+     "args": [
+      "MoebiusAirship.uproject",
+      "/Game/Render/FinalS2.FinalS2"
+     ]
+    },
+    {
+     "id": "20261023-175629-95c987",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 58.0,
+     "time": "2026-10-23T17:56:29",
+     "args": [
+      "MoebiusAirship.uproject",
+      "/Game/Render/FinalS3.FinalS3"
+     ]
+    },
+    {
+     "id": "20261023-175728-ecc1d2",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 57.9,
+     "time": "2026-10-23T17:57:28",
+     "args": [
+      "MoebiusAirship.uproject",
+      "/Game/Render/FinalS4.FinalS4"
+     ]
+    },
+    {
+     "id": "20261023-175826-54523e",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 56.8,
+     "time": "2026-10-23T17:58:26",
+     "args": [
+      "MoebiusAirship.uproject",
+      "/Game/Render/FinalS5.FinalS5"
+     ]
+    },
+    {
+     "id": "20261023-180948-68f4ab",
+     "action": "encode",
+     "exit": 0,
+     "seconds": 6.6,
+     "time": "2026-10-23T18:09:48",
+     "args": [
+      "Renders/final",
+      "30"
+     ]
+    }
+   ],
+   "board": null,
+   "eta": null,
+   "dispatcher": false,
+   "can_pause": false,
+   "image": {
+    "path": "/home/me/StudioProjects/unreal/MoebiusAirship/Renders/final/Main.0899.png",
+    "time": "2026-10-23T17:59:20"
+   },
+   "last_activity": "2026-10-23T18:18:01",
+   "active": false
+  },
+  {
+   "name": "DontPanicTrailer",
+   "path": "/home/me/StudioProjects/unreal/DontPanicTrailer",
+   "engine": "unreal",
+   "paused": false,
+   "steps": [
+    {
+     "id": "L1",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 263.7,
+     "time": "2026-10-19T11:40:26",
+     "note": ""
+    },
+    {
+     "id": "L2",
+     "attempts": 2,
+     "status": "pass",
+     "by": "escalated",
+     "model": "gemma4-26b-a4b",
+     "first_try": false,
+     "local_seconds": 1344.2,
+     "time": "2026-10-19T12:08:02",
+     "note": "InterchangeManager.import_asset with combine pipeline + save_directory; flag file data/REIMPORT (env doesn't pass the broker); does_directory_exist"
+    },
+    {
+     "id": "L3",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 451.7,
+     "time": "2026-10-19T12:15:58",
+     "note": ""
+    },
+    {
+     "id": "H4",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "gemma4-26b-a4b",
+     "first_try": true,
+     "local_seconds": 2400.0,
+     "time": "2026-10-19T13:29:06",
+     "note": "timed out at 40 min debugging with scratch scripts, but import_anims.py works: 70 clips, 5/5 meshes on the master skeleton (director ran the check; clip names k"
+    },
+    {
+     "id": "C1",
+     "attempts": 1,
+     "status": "pass",
+     "by": "escalated",
+     "model": "gemma4-26b-a4b",
+     "first_try": false,
+     "local_seconds": 2400.0,
+     "time": "2026-10-19T14:15:11",
+     "note": "rewrote cards.py (sprites, safe-zone shrink, fades, bubble pop); test sheets checked"
+    },
+    {
+     "id": "G3-score",
+     "attempts": 1,
+     "status": "pass",
+     "by": "escalated",
+     "model": "gemma4-26b-a4b",
+     "first_try": false,
+     "local_seconds": 1863.8,
+     "time": "2026-10-19T18:54:41",
+     "note": "fixed the draft: exact length, melody cycles, band under the escape, envelope after mixing, pad sting; tests pass"
+    }
+   ],
+   "steps_line": {
+    "done": 6,
+    "local": 3,
+    "first_try": 3,
+    "after_retry": 0,
+    "escalated": 3,
+    "director": 0,
+    "text": "3 of 6 steps done locally: 3 first try, 0 after retry, 3 escalated"
+   },
+   "workers": [],
+   "gpu_pending": [],
+   "gpu_recent": [
+    {
+     "id": "20261019-205411-c86a54",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 42.6,
+     "time": "2026-10-19T20:54:11",
+     "args": [
+      "DontPanicTrailer.uproject",
+      "/Game/Render/Final30_916"
+     ]
+    },
+    {
+     "id": "20261019-205454-28d533",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 44.8,
+     "time": "2026-10-19T20:54:54",
+     "args": [
+      "DontPanicTrailer.uproject",
+      "/Game/Render/Final30_916"
+     ]
+    },
+    {
+     "id": "20261019-205540-ac10b2",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 48.4,
+     "time": "2026-10-19T20:55:40",
+     "args": [
+      "DontPanicTrailer.uproject",
+      "/Game/Render/Final30_916"
+     ]
+    },
+    {
+     "id": "20261019-210538-ced24d",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 85.4,
+     "time": "2026-10-19T21:05:38",
+     "args": [
+      "DontPanicTrailer.uproject",
+      "Scripts/build_trailer.py"
+     ]
+    },
+    {
+     "id": "20261019-210704-39ab4b",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 41.8,
+     "time": "2026-10-19T21:07:04",
+     "args": [
+      "DontPanicTrailer.uproject",
+      "/Game/Render/Final60_169"
+     ]
+    },
+    {
+     "id": "20261019-210747-21c23a",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 50.8,
+     "time": "2026-10-19T21:07:47",
+     "args": [
+      "DontPanicTrailer.uproject",
+      "/Game/Render/Final30_169"
+     ]
+    },
+    {
+     "id": "20261019-210839-e4ce5b",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 53.0,
+     "time": "2026-10-19T21:08:39",
+     "args": [
+      "DontPanicTrailer.uproject",
+      "/Game/Render/Final30_916"
+     ]
+    },
+    {
+     "id": "20261019-212705-22ed99",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 10.3,
+     "time": "2026-10-19T21:27:05",
+     "args": [
+      "DontPanicTrailer.uproject",
+      ".studio/scratch/probe_tpl.py"
+     ]
+    }
+   ],
+   "board": null,
+   "eta": null,
+   "dispatcher": false,
+   "can_pause": false,
+   "image": {
+    "path": "/home/me/StudioProjects/unreal/DontPanicTrailer/out/DontPanicIsland_credits.png",
+    "time": "2026-10-22T21:32:12"
+   },
+   "last_activity": "2026-10-19T21:27:15",
+   "active": false
+  },
+  {
+   "name": "WebMinTest",
+   "path": "/home/me/StudioProjects/godot/WebMinTest",
+   "engine": "godot",
+   "paused": false,
+   "steps": [],
+   "steps_line": {
+    "done": 0,
+    "local": 0,
+    "first_try": 0,
+    "after_retry": 0,
+    "escalated": 0,
+    "director": 0,
+    "text": "0 of 0 steps done locally: 0 first try, 0 after retry, 0 escalated"
+   },
+   "workers": [],
+   "gpu_pending": [],
+   "gpu_recent": [
+    {
+     "id": "20261018-172000-73ef6c",
+     "action": "godot-import",
+     "exit": 0,
+     "seconds": 2.8,
+     "time": "2026-10-18T17:20:00",
+     "args": []
+    },
+    {
+     "id": "20261018-172004-3161c8",
+     "action": "godot-export",
+     "exit": 0,
+     "seconds": 2.8,
+     "time": "2026-10-18T17:20:04",
+     "args": [
+      "web"
+     ]
+    }
+   ],
+   "board": null,
+   "eta": null,
+   "dispatcher": false,
+   "can_pause": false,
+   "image": null,
+   "last_activity": "2026-10-18T17:20:07",
+   "active": false
+  },
+  {
+   "name": "VerifyGodot",
+   "path": "/home/me/StudioProjects/godot/VerifyGodot",
+   "engine": "godot",
+   "paused": false,
+   "steps": [],
+   "steps_line": {
+    "done": 0,
+    "local": 0,
+    "first_try": 0,
+    "after_retry": 0,
+    "escalated": 0,
+    "director": 0,
+    "text": "0 of 0 steps done locally: 0 first try, 0 after retry, 0 escalated"
+   },
+   "workers": [],
+   "gpu_pending": [],
+   "gpu_recent": [
+    {
+     "id": "20261015-132540-28f591",
+     "action": "godot-check",
+     "exit": 0,
+     "seconds": 2.9,
+     "time": "2026-10-15T13:25:40",
+     "args": []
+    },
+    {
+     "id": "20261015-132544-421cdf",
+     "action": "godot-play",
+     "exit": 0,
+     "seconds": 3.0,
+     "time": "2026-10-15T13:25:44",
+     "args": [
+      "scenes/main.tscn",
+      "20"
+     ]
+    }
+   ],
+   "board": null,
+   "eta": null,
+   "dispatcher": false,
+   "can_pause": false,
+   "image": {
+    "path": "/home/me/StudioProjects/godot/VerifyGodot/shots/main.png",
+    "time": "2026-10-15T13:25:47"
+   },
+   "last_activity": "2026-10-15T13:25:47",
+   "active": false
+  },
+  {
+   "name": "NeonRain",
+   "path": "/home/me/StudioProjects/unreal/NeonRain",
+   "engine": "unreal",
+   "paused": false,
+   "steps": [
+    {
+     "id": "plan",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-08T09:20:33",
+     "note": "brief -> PLAN.md (4 shots on bar lines, 9 local steps)"
+    },
+    {
+     "id": "tex",
+     "attempts": 2,
+     "status": "pass",
+     "by": "escalated",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": false,
+     "local_seconds": 682.1,
+     "time": "2026-10-08T14:10:28",
+     "note": "takeover after 2 local attempts: vertical CJK column, text backdrops, glow over whole image (worker did 90%: files, CJK, palettes, windows)"
+    },
+    {
+     "id": "towers",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": true,
+     "local_seconds": 974.9,
+     "time": "2026-10-08T14:27:11",
+     "note": "9 GLBs, bases z=0, chimney tops verified at (+-110,+-110,120); simple but varied silhouettes"
+    },
+    {
+     "id": "import",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": true,
+     "local_seconds": 346.0,
+     "time": "2026-10-08T14:33:25",
+     "note": "9 meshes, 12 textures, 17 materials verified on disk"
+    },
+    {
+     "id": "city",
+     "attempts": 2,
+     "status": "pass",
+     "by": "escalated",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": false,
+     "local_seconds": 3695.0,
+     "time": "2026-10-08T15:42:04",
+     "note": "takeover after 2 local attempts (2nd timed out): towers were x100 tall (17 km) and ground 400 km, panels x100 / wrong side / flat, light colours near-black (0-1"
+    },
+    {
+     "id": "seq",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": true,
+     "local_seconds": 334.4,
+     "time": "2026-10-08T15:57:17",
+     "note": "cameras/cuts/spinners correct on first attempt (verified by render)"
+    },
+    {
+     "id": "preview",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-08T15:57:17",
+     "note": "look-dev (5 rounds): fog luminance + volumetric range, ad emissive/glow, pyramid scale/emissive, Cam_4 55mm; found + fixed own bug (lookdev deleting referenced "
+    },
+    {
+     "id": "rain",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": true,
+     "local_seconds": 719.1,
+     "time": "2026-10-08T16:11:22",
+     "note": "letterbox exact, rain catches light, 88 s/600f; but worker verified into sandbox-private /tmp (outputs not delivered) - Claude re-ran into Renders/comp_preview"
+    },
+    {
+     "id": "score",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": true,
+     "local_seconds": 134.9,
+     "time": "2026-10-08T16:14:02",
+     "note": "20.000 s, -1.5 dBFS, A minor (78), events on bar lines; minor: near-mono (L/R corr 0.98)"
+    },
+    {
+     "id": "final",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-08T16:23:41",
+     "note": "ran final render (144 s), worker's rain_comp at 1080p (353 s), encode, mux; QA of delivered frames"
+    },
+    {
+     "id": "deliver",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-08T16:23:41",
+     "note": "out/NeonRain.mp4 20.0 s 1080p HEVC + AAC"
+    }
+   ],
+   "steps_line": {
+    "done": 11,
+    "local": 5,
+    "first_try": 5,
+    "after_retry": 0,
+    "escalated": 2,
+    "director": 4,
+    "text": "5 of 11 steps done locally: 5 first try, 0 after retry, 2 escalated, 4 director-owned"
+   },
+   "workers": [],
+   "gpu_pending": [],
+   "gpu_recent": [
+    {
+     "id": "20261008-155610-3562c1",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 13.4,
+     "time": "2026-10-08T15:56:10",
+     "args": [
+      "NeonRain.uproject",
+      "Scripts/lookdev.py"
+     ]
+    },
+    {
+     "id": "20261008-155624-b29176",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 39.2,
+     "time": "2026-10-08T15:56:24",
+     "args": [
+      "NeonRain.uproject",
+      "/Game/Render/Preview"
+     ]
+    },
+    {
+     "id": "20261008-161402-8531a2",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 143.8,
+     "time": "2026-10-08T16:14:02",
+     "args": [
+      "NeonRain.uproject",
+      "/Game/Render/Final"
+     ]
+    },
+    {
+     "id": "20261008-162235-678a44",
+     "action": "encode",
+     "exit": 0,
+     "seconds": 5.0,
+     "time": "2026-10-08T16:22:35",
+     "args": [
+      "Renders/comp_final",
+      "30"
+     ]
+    },
+    {
+     "id": "20261014-103657-1478bf",
+     "action": "blender",
+     "exit": 0,
+     "seconds": 3.3,
+     "time": "2026-10-14T10:36:57",
+     "args": [
+      ".studio/checks/check_towers.py"
+     ]
+    },
+    {
+     "id": "20261014-103701-96b017",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 65.4,
+     "time": "2026-10-14T10:37:01",
+     "args": [
+      "NeonRain.uproject",
+      ".studio/checks/check_import.py"
+     ]
+    },
+    {
+     "id": "20261014-103807-4d9086",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 9.1,
+     "time": "2026-10-14T10:38:07",
+     "args": [
+      "NeonRain.uproject",
+      ".studio/checks/check_city.py"
+     ]
+    },
+    {
+     "id": "20261014-103817-942620",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 9.1,
+     "time": "2026-10-14T10:38:17",
+     "args": [
+      "NeonRain.uproject",
+      ".studio/checks/check_seq.py"
+     ]
+    }
+   ],
+   "board": null,
+   "eta": null,
+   "dispatcher": false,
+   "can_pause": false,
+   "image": {
+    "path": "/home/me/StudioProjects/unreal/NeonRain/Renders/comp_final/Main.0599.png",
+    "time": "2026-10-08T16:22:35"
+   },
+   "last_activity": "2026-10-14T10:38:27",
+   "active": false
+  },
+  {
+   "name": "SpinnerRun",
+   "path": "/home/me/StudioProjects/unreal/SpinnerRun",
+   "engine": "unreal",
+   "paused": false,
+   "steps": [
+    {
+     "id": "ring",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": true,
+     "local_seconds": 158.2,
+     "time": "2026-10-08T16:44:30",
+     "note": "torus verified independently: 1.2 x 21.2 x 21.2 m, axis +X"
+    },
+    {
+     "id": "setup",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-08T16:44:30",
+     "note": "project, assets from NeonRain, config, plan, course design, prompts, broker ue-play/run-packaged"
+    },
+    {
+     "id": "sfx",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": true,
+     "local_seconds": 684.2,
+     "time": "2026-10-08T16:56:11",
+     "note": "7 WAVs correct durations/peaks; loop seams slightly discontinuous (polish)"
+    },
+    {
+     "id": "import",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": true,
+     "local_seconds": 273.1,
+     "time": "2026-10-08T17:00:58",
+     "note": "10 meshes, 20 materials, 7 sounds on disk"
+    },
+    {
+     "id": "cpp-pawn",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": true,
+     "local_seconds": 1283.6,
+     "time": "2026-10-08T17:23:07",
+     "note": "Qwen3.6, 1 attempt, 21 min, 67 turns; builds; input map per spec; review fix: crash push-out 500 cm -> 50 cm (units slip)"
+    },
+    {
+     "id": "cpp-race",
+     "attempts": 2,
+     "status": "pass",
+     "by": "local",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": false,
+     "local_seconds": 4412.5,
+     "time": "2026-10-08T18:41:13",
+     "note": "retry on Qwen3.6 (fresh session, error list): compiles after 28 min / 227 turns; Bonsai's design kept"
+    },
+    {
+     "id": "course",
+     "attempts": 1,
+     "status": "pass",
+     "by": "local",
+     "model": "qwen3.6-35b-a3b",
+     "first_try": true,
+     "local_seconds": 414.5,
+     "time": "2026-10-08T18:48:22",
+     "note": "coords exact, clearance check sound (16/16 + 16/16); 7 min, first attempt"
+    },
+    {
+     "id": "review",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-08T18:48:22",
+     "note": "pawn overlap events off (rings could never trigger); engine pitch unused; string-loaded assets added to cook list"
+    },
+    {
+     "id": "playtest",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-08T19:14:58",
+     "note": "autopilot full run T=99.0s after 7 fixes: Enhanced Input default classes (fatal cast), Nanite usage flags (grey in -game), ring overlap checked OtherComp, autop"
+    },
+    {
+     "id": "package",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-08T19:27:53",
+     "note": "Shipping package (6 min first, 1 min incremental) + run-packaged autopilot: 16/16, GAME_FINISH t=98.97; UE_LOG is stripped in Shipping -> GAME_EVENT macro print"
+    },
+    {
+     "id": "ship",
+     "attempts": 1,
+     "status": "failing",
+     "by": null,
+     "model": "qwen3.6-35b-a3b",
+     "first_try": false,
+     "local_seconds": 1800.0,
+     "time": "2026-10-08T20:03:00",
+     "note": "timeout 30 min; GLB parts disconnected, flat hull, 8.0 m long (spec 5.0); Claude rewrites"
+    },
+    {
+     "id": "polish-1",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-08T20:09:35",
+     "note": "HUDClass was never set (no HUD); next-ring marker (brackets/edge chevron + distance); night sky sphere (IsSky gradient; fixes black sky light + on-screen warnin"
+    },
+    {
+     "id": "polish-2",
+     "attempts": 0,
+     "status": "pass",
+     "by": "director",
+     "model": null,
+     "first_try": false,
+     "local_seconds": 0.0,
+     "time": "2026-10-08T20:20:42",
+     "note": "screen-space rain (post-process, 2 panning layers); full rebuild via build_all.sh OK; final Shipping package verified 16/16 t=98.98"
+    }
+   ],
+   "steps_line": {
+    "done": 12,
+    "local": 6,
+    "first_try": 5,
+    "after_retry": 1,
+    "escalated": 0,
+    "director": 6,
+    "text": "6 of 12 steps done locally: 5 first try, 1 after retry, 0 escalated, 6 director-owned"
+   },
+   "workers": [],
+   "gpu_pending": [],
+   "gpu_recent": [
+    {
+     "id": "20261008-201530-d30611",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 13.7,
+     "time": "2026-10-08T20:15:30",
+     "args": [
+      "SpinnerRun.uproject",
+      "Scripts/lookdev.py"
+     ]
+    },
+    {
+     "id": "20261008-201544-9e4ea8",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 9.5,
+     "time": "2026-10-08T20:15:44",
+     "args": [
+      "SpinnerRun.uproject",
+      "Scripts/sky.py"
+     ]
+    },
+    {
+     "id": "20261008-201555-f80f86",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 9.6,
+     "time": "2026-10-08T20:15:55",
+     "args": [
+      "SpinnerRun.uproject",
+      "Scripts/rain.py"
+     ]
+    },
+    {
+     "id": "20261008-201605-5c4380",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 11.3,
+     "time": "2026-10-08T20:16:05",
+     "args": [
+      "SpinnerRun.uproject",
+      "Scripts/import_ship.py"
+     ]
+    },
+    {
+     "id": "20261008-201617-7fdff5",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 9.0,
+     "time": "2026-10-08T20:16:17",
+     "args": [
+      "SpinnerRun.uproject",
+      "Scripts/build_course.py"
+     ]
+    },
+    {
+     "id": "20261008-201627-742dc0",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 9.8,
+     "time": "2026-10-08T20:16:27",
+     "args": [
+      "SpinnerRun.uproject",
+      "Scripts/fix_materials.py"
+     ]
+    },
+    {
+     "id": "20261008-201644-0ac46e",
+     "action": "ue-package",
+     "exit": 0,
+     "seconds": 120.3,
+     "time": "2026-10-08T20:16:44",
+     "args": [
+      "SpinnerRun.uproject"
+     ]
+    },
+    {
+     "id": "20261008-201845-d8ee4a",
+     "action": "run-packaged",
+     "exit": 0,
+     "seconds": 108.8,
+     "time": "2026-10-08T20:18:45",
+     "args": [
+      "200",
+      "-autopilot"
+     ]
+    }
+   ],
+   "board": null,
+   "eta": null,
+   "dispatcher": false,
+   "can_pause": false,
+   "image": {
+    "path": "/home/me/StudioProjects/unreal/SpinnerRun/out/SpinnerRun_shot_avenue.png",
+    "time": "2026-10-08T20:20:42"
+   },
+   "last_activity": "2026-10-08T20:20:42",
+   "active": false
+  },
+  {
+   "name": "CoolDemo",
+   "path": "/home/me/StudioProjects/unreal/CoolDemo",
+   "engine": "unreal",
+   "paused": false,
+   "steps": [],
+   "steps_line": {
+    "done": 0,
+    "local": 0,
+    "first_try": 0,
+    "after_retry": 0,
+    "escalated": 0,
+    "director": 0,
+    "text": "0 of 0 steps done locally: 0 first try, 0 after retry, 0 escalated"
+   },
+   "workers": [],
+   "gpu_pending": [],
+   "gpu_recent": [
+    {
+     "id": "20261007-110753-f40e49",
+     "action": "ue-python",
+     "exit": 2,
+     "seconds": 0.0,
+     "time": "2026-10-07T11:07:53",
+     "args": [
+      "CoolDemo.uproject",
+      "../../../../etc/passwd"
+     ]
+    },
+    {
+     "id": "20261007-110754-9f3865",
+     "action": "rm",
+     "exit": 2,
+     "seconds": 0.0,
+     "time": "2026-10-07T11:07:54",
+     "args": [
+      "-rf",
+      "/"
+     ]
+    },
+    {
+     "id": "20261007-110755-5e4dde",
+     "action": "ue-python",
+     "exit": 0,
+     "seconds": 9.4,
+     "time": "2026-10-07T11:07:55",
+     "args": [
+      "CoolDemo.uproject",
+      "Scripts/check_props.py"
+     ]
+    },
+    {
+     "id": "20261007-111459-43c3c8",
+     "action": "ue-render",
+     "exit": 0,
+     "seconds": 29.8,
+     "time": "2026-10-07T11:14:59",
+     "args": [
+      "CoolDemo.uproject",
+      "/Game/Demo/RenderPreview.RenderPreview"
+     ]
+    }
+   ],
+   "board": null,
+   "eta": null,
+   "dispatcher": false,
+   "can_pause": false,
+   "image": null,
+   "last_activity": "2026-10-07T11:15:29",
+   "active": false
+  }
+ ],
+ "jobs": [
+  {
+   "name": "gen3d-props",
+   "state": "running",
+   "command": "python3 evals/gen3d/run.py props",
+   "project": null,
+   "start": "2026-10-23T19:10:00",
+   "end": null,
+   "mem": "40G",
+   "log": "/home/me/StudioProjects/evals/jobs/gen3d-props.log",
+   "runtime_s": 5465,
+   "silent_s": 2100,
+   "last_line": "prop 7/12: decimating to 10k tris",
+   "stalled": true
+  },
+  {
+   "name": "DontPanicIsland-dispatch",
+   "state": "running",
+   "command": "studio-dispatch /home/me/StudioProjects/godot/DontPanicIsland run",
+   "project": "/home/me/StudioProjects/godot/DontPanicIsland",
+   "start": "2026-10-23T17:02:00",
+   "end": null,
+   "mem": "40G",
+   "log": "/home/me/StudioProjects/evals/jobs/DontPanicIsland-dispatch.log",
+   "runtime_s": 13145,
+   "silent_s": 25,
+   "last_line": "T15 attempt 2 (retry, bonsai2-27b) started",
+   "stalled": false
+  },
+  {
+   "name": "decide-evals",
+   "state": "done",
+   "command": "python3 evals/decide/run.py all",
+   "project": null,
+   "start": "2026-10-23T15:00:00",
+   "end": "2026-10-23T15:41:00",
+   "mem": "40G",
+   "log": "/home/me/StudioProjects/evals/jobs/decide-evals.log",
+   "runtime_s": 2460,
+   "silent_s": 19000,
+   "last_line": "done: 96 frames, 95% correct",
+   "stalled": false
+  },
+  {
+   "name": "ocean-bake",
+   "state": "failed (exit 137: killed, out of memory?)",
+   "command": "python3 tools/bake_shore.py --all",
+   "project": "/home/me/StudioProjects/godot/DontPanicIsland",
+   "start": "2026-10-23T13:00:00",
+   "end": "2026-10-23T13:12:00",
+   "mem": "8G",
+   "log": "/home/me/StudioProjects/evals/jobs/ocean-bake.log",
+   "runtime_s": 720,
+   "silent_s": 27000,
+   "last_line": "island 14/25",
+   "stalled": false
+  }
+ ],
+ "eval_pause": {
+  "paused": false,
+  "path": "/home/me/StudioProjects/evals/runs/PAUSE"
+ },
+ "machine": {
+  "gpus": [
+   {
+    "index": 0,
+    "name": "RTX 2060",
+    "mem_used_mb": 9,
+    "mem_total_mb": 6144,
+    "util": 0
+   },
+   {
+    "index": 1,
+    "name": "RTX 5070 Ti",
+    "mem_used_mb": 15100,
+    "mem_total_mb": 16303,
+    "util": 97
+   }
+  ],
+  "llm": [
+   {
+    "model": "bonsai2-27b",
+    "state": "ready"
+   }
+  ],
+  "services": {
+   "studio-broker": "active",
+   "llama-swap": "active",
+   "studio-status": "inactive"
+  }
+ },
+ "queue": {
+  "items": [
+   {
+    "id": "dashboard",
+    "item": "Progress dashboard: collector, studio-job, page, service, status line",
+    "status": "next",
+    "estimate_h": 3,
+    "depends_on": [],
+    "needs_user": false,
+    "ref": "docs/dashboard-design.md"
+   },
+   {
+    "id": "ufw",
+    "item": "Allow the dashboard port on the home subnet: sudo ufw allow from 10.0.0.0/24 to any port 8767 proto tcp",
+    "status": "waiting",
+    "estimate_h": 0.1,
+    "depends_on": [
+     "dashboard"
+    ],
+    "needs_user": true
+   },
+   {
+    "id": "ue584-noaudio",
+    "item": "UE 5.8.4: MRQ render of a sequence without audio (the fix 5.8.4 shipped)",
+    "status": "next",
+    "estimate_h": 0.3,
+    "depends_on": [],
+    "needs_user": false
+   },
+   {
+    "id": "ue584-package",
+    "item": "UE 5.8.4: package SpinnerRun and run it with -autopilot",
+    "status": "next",
+    "estimate_h": 0.5,
+    "depends_on": [],
+    "needs_user": false
+   },
+   {
+    "id": "moebius-guards",
+    "item": "MoebiusAirship retro guards: git identity in studio-new, worker stall detector, post-process + custom-depth proxy helpers in studio_ue.py",
+    "status": "next",
+    "estimate_h": 1.5,
+    "depends_on": [],
+    "needs_user": false,
+    "ref": "retros/MoebiusAirship/retro.md"
+   },
+   {
+    "id": "moebius-notes",
+    "item": "MoebiusAirship: the user's notes on the clip",
+    "status": "waiting",
+    "estimate_h": 0.5,
+    "depends_on": [],
+    "needs_user": true,
+    "ref": "/home/me/StudioProjects/unreal/MoebiusAirship/out/MoebiusAirship.mp4"
+   },
+   {
+    "id": "linkedin",
+    "item": "Post the Don't Panic Island LinkedIn video (text and video ready; then watch the leaderboard)",
+    "status": "waiting",
+    "estimate_h": 0,
+    "depends_on": [],
+    "needs_user": true,
+    "ref": "/home/me/StudioProjects/unreal/DontPanicTrailer/out/linkedin_post.txt"
+   },
+   {
+    "id": "spinnerrun-fly",
+    "item": "SpinnerRun: a human flies it (input feel untested), sfx loop seams",
+    "status": "waiting",
+    "estimate_h": 0.5,
+    "depends_on": [
+     "ue584-package"
+    ],
+    "needs_user": true
+   },
+   {
+    "id": "ue584",
+    "item": "Update Unreal Engine 5.8.3 -> 5.8.4",
+    "status": "done",
+    "estimate_h": 0,
+    "depends_on": [],
+    "needs_user": false
+   },
+   {
+    "id": "moebius",
+    "item": "MoebiusAirship: 30 s Moebius-style clip (UE 5.8.4 test)",
+    "status": "done",
+    "estimate_h": 0,
+    "depends_on": [
+     "ue584"
+    ],
+    "needs_user": false
+   }
+  ],
+  "open": 8,
+  "estimate_h": 6.4,
+  "needs_user": 4,
+  "updated": "2026-10-23"
+ },
+ "share": {
+  "project": {
+   "total_tokens": 1210444,
+   "local_pct": 88.9,
+   "name": "DontPanicIsland",
+   "steps_line": {
+    "done": 17,
+    "local": 17,
+    "first_try": 11,
+    "after_retry": 6,
+    "escalated": 0,
+    "director": 0,
+    "text": "17 of 17 steps done locally: 11 first try, 6 after retry, 0 escalated"
+   },
+   "slices": [
+    {
+     "model": "gemma4-26b-a4b",
+     "group": "local",
+     "tokens": 701000,
+     "messages": 410,
+     "attempts": 21,
+     "minutes": 260,
+     "pct": 57.91,
+     "shade": 2
+    },
+    {
+     "model": "bonsai2-27b",
+     "group": "local",
+     "tokens": 375000,
+     "messages": 160,
+     "attempts": 7,
+     "minutes": 249,
+     "pct": 30.98,
+     "shade": 0
+    },
+    {
+     "model": "claude-opus-5-5",
+     "group": "online",
+     "tokens": 120444,
+     "messages": 380,
+     "attempts": 6,
+     "minutes": 1400,
+     "pct": 9.95,
+     "shade": 3
+    },
+    {
+     "model": "other online",
+     "group": "online",
+     "tokens": 14000,
+     "messages": 30,
+     "attempts": 2,
+     "minutes": 20,
+     "pct": 1.16,
+     "other": true,
+     "shade": 9
+    }
+   ]
+  },
+  "today": {
+   "total_tokens": 388504,
+   "local_pct": 72.2,
+   "slices": [
+    {
+     "model": "gemma4-26b-a4b",
+     "group": "local",
+     "tokens": 280311,
+     "messages": 213,
+     "attempts": 8,
+     "minutes": 144,
+     "pct": 72.15,
+     "shade": 3
+    },
+    {
+     "model": "claude-opus-5-5",
+     "group": "online",
+     "tokens": 108193,
+     "messages": 143,
+     "attempts": 9,
+     "minutes": 951,
+     "pct": 27.85,
+     "shade": 4
+    }
+   ]
+  },
+  "all": {
+   "total_tokens": 4124435,
+   "local_pct": 68.5,
+   "slices": [
+    {
+     "model": "gemma4-26b-a4b",
+     "group": "local",
+     "tokens": 1679864,
+     "messages": 1037,
+     "attempts": 32,
+     "minutes": 823,
+     "pct": 40.41,
+     "shade": 3
+    },
+    {
+     "model": "claude-opus-5-5",
+     "group": "online",
+     "tokens": 1299043,
+     "messages": 1415,
+     "attempts": 38,
+     "minutes": 6840,
+     "pct": 31.26,
+     "shade": 4
+    },
+    {
+     "model": "bonsai2-27b",
+     "group": "local",
+     "tokens": 626833,
+     "messages": 396,
+     "attempts": 7,
+     "minutes": 249,
+     "pct": 15.08,
+     "shade": 0
+    },
+    {
+     "model": "qwen3.6-35b-a3b",
+     "group": "local",
+     "tokens": 518695,
+     "messages": 625,
+     "attempts": 14,
+     "minutes": 203,
+     "pct": 12.48,
+     "shade": 2
+    },
+    {
+     "model": "other local",
+     "group": "local",
+     "tokens": 20000,
+     "messages": 40,
+     "attempts": 3,
+     "minutes": 9,
+     "pct": 0.48,
+     "other": true,
+     "shade": 9
+    },
+    {
+     "model": "mystery-7b",
+     "group": "unclassified",
+     "tokens": 12000,
+     "messages": 9,
+     "attempts": 1,
+     "minutes": 4,
+     "pct": 0.29,
+     "shade": 9
+    }
+   ]
+  }
+ },
+ "stalls": [
+  {
+   "project": null,
+   "what": "job gen3d-props",
+   "why": "log silent for 35 min"
+  }
+ ],
+ "alerts": [
+  {
+   "key": "stall|None|job gen3d-props",
+   "level": "red",
+   "title": "job gen3d-props stalled",
+   "detail": "log silent for 35 min",
+   "time": "2026-10-23T20:41:05"
+  },
+  {
+   "key": "esc|DontPanicIsland|2026-10-23T19:58:12",
+   "level": "red",
+   "title": "DontPanicIsland: T14 ESCALATED",
+   "detail": "T14 ESCALATED after 3 attempts: .studio/escalations/T14.patch",
+   "time": "2026-10-23T19:58:12"
+  },
+  {
+   "key": "job|decide-evals|2026-10-23T15:41:00",
+   "level": "info",
+   "title": "job decide-evals done",
+   "detail": "done: 96 frames, 95% correct",
+   "time": "2026-10-23T15:41:00"
+  }
+ ],
+ "feed": [
+  {
+   "time": "2026-10-23T20:40:10",
+   "project": "DontPanicIsland",
+   "kind": "gpu",
+   "text": "GPU godot-play scenes/main.tscn requested"
+  },
+  {
+   "time": "2026-10-23T20:22:00",
+   "project": "DontPanicIsland",
+   "kind": "info",
+   "text": "T15 attempt 2 (retry, bonsai2-27b) started"
+  },
+  {
+   "time": "2026-10-23T20:21:58",
+   "project": "DontPanicIsland",
+   "kind": "fail",
+   "text": "T15 attempt 1 (first, gemma4-26b-a4b): check FAIL in 2412 s"
+  },
+  {
+   "time": "2026-10-23T19:58:12",
+   "project": "DontPanicIsland",
+   "kind": "escalated",
+   "text": "T14 ESCALATED after 3 attempts: .studio/escalations/T14.patch"
+  },
+  {
+   "time": "2026-10-23T19:10:00",
+   "project": null,
+   "kind": "info",
+   "text": "job gen3d-props started"
+  },
+  {
+   "time": "2026-10-23T18:41:30",
+   "project": "DontPanicIsland",
+   "kind": "pass",
+   "text": "T13 attempt 1 (first, gemma4-26b-a4b): check PASS in 811 s"
+  },
+  {
+   "time": "2026-10-23T18:18:01",
+   "project": "MoebiusAirship",
+   "kind": "director",
+   "text": "step 9 done by the director: final render in 5 chunks (cutcheck OK), clef-flash on 900 frames, H.264 encode + mux"
+  },
+  {
+   "time": "2026-10-23T18:18:01",
+   "project": "MoebiusAirship",
+   "kind": "director",
+   "text": "step 7 done by the director: preview QA: clef-flash 900 frames, 0 defects; S1 overexposure flag fixed (linear sand, tilt)"
+  },
+  {
+   "time": "2026-10-23T18:09:48",
+   "project": "MoebiusAirship",
+   "kind": "gpu",
+   "text": "GPU encode Renders/final 30 exit 0 (7 s)"
+  },
+  {
+   "time": "2026-10-23T17:58:26",
+   "project": "MoebiusAirship",
+   "kind": "gpu",
+   "text": "GPU ue-render MoebiusAirship.uproject /Game/Render/FinalS5.FinalS5 exit 0 (57 s)"
+  },
+  {
+   "time": "2026-10-23T17:57:28",
+   "project": "MoebiusAirship",
+   "kind": "gpu",
+   "text": "GPU ue-render MoebiusAirship.uproject /Game/Render/FinalS4.FinalS4 exit 0 (58 s)"
+  },
+  {
+   "time": "2026-10-23T17:56:29",
+   "project": "MoebiusAirship",
+   "kind": "gpu",
+   "text": "GPU ue-render MoebiusAirship.uproject /Game/Render/FinalS3.FinalS3 exit 0 (58 s)"
+  },
+  {
+   "time": "2026-10-23T17:52:37",
+   "project": "MoebiusAirship",
+   "kind": "pass",
+   "text": "step 8 verdict pass: worker wrote score + check (D Lydian chords, glide, fire, chimes, whoosh) in 12 min; director moved the fade-out 25.0 -> 28.5 s (it swallowed the S5 climax) and made it cubic (-50 dBFS end)"
+  },
+  {
+   "time": "2026-10-23T17:51:47",
+   "project": "MoebiusAirship",
+   "kind": "info",
+   "text": "step 8 attempt 1 (gemma4-26b-a4b) finished in 12 min, exit 0"
+  }
+ ]
+}

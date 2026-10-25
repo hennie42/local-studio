@@ -47,7 +47,9 @@ Use static types (`var hp: int = 3`, `:=`, typed function signatures): the parse
 and argument types at `godot-check` time instead of at runtime.
 
 ## Godot 4 pitfalls that compile but misbehave (from the retros: retros/*/findings.jsonl)
-`godot-lint` (part of `studio godot-check`) flags the first four; avoid all of them:
+`godot-lint` (part of `studio godot-check`) flags 1-4, plus degrees into `sin`/`cos`, a hand-counted `substr` after
+`begins_with` (use `trim_prefix`) and an unchecked `FileAccess.open` (null without a writable user://, as in a
+private browser window); avoid all of them:
 1. **Anchors and grow direction.** A Control anchored to the bottom, the right or the centre grows from its top-left
    by default, so it hangs off its anchor (bottom panels end up below the window, centred ones off-centre). After
    `set_anchors_and_offsets_preset(...)` set `grow_vertical = Control.GROW_DIRECTION_BEGIN` (bottom),
@@ -65,8 +67,19 @@ and argument types at `godot-check` time instead of at runtime.
    the owner may have freed it already.
 7. **Long-lived nodes that drive shared state** (a camera, the HUD) must stop when they are done: `set_process(false)`
    and `queue_free()` at the end, on every path (an intro that only freed itself when skipped kept steering the
-   camera after it ended).
+   camera after it ended). A skippable sequence: every timed step is a tween of the node itself (freed with it;
+   `get_tree().create_timer()` callbacks outlive it and fire after a skip), one tween per property (two fought), and
+   skip and end share one exit function.
 8. **Asset origins:** a model's mesh can sit off its origin; check placement in a screenshot, don't assume centred.
+   Facing: a model that faces +z at rotation 0 turns to a direction with `rotation.y = atan2(dir.x, dir.z)`.
+9. **Mark input you act on as handled:** a handler that reacts to a key or click calls
+   `get_viewport().set_input_as_handled()`, or the next handler sees the same event (a menu closed on Esc, then the
+   game opened it again; the click that skipped the intro also dug a tile).
+10. **`Input.is_action_pressed` in `_process` sees every key**, also while a LineEdit has focus or a menu is open
+    (typing a nickname moved the camera): skip it when `get_viewport().gui_get_focus_owner() is LineEdit` or a menu
+    is up.
+11. **No in-range sentinels:** `Vector2i.ZERO` or `0` as "none" breaks when (0, 0) or 0 is a real value; use
+    `is_empty()`, a separate flag, or an out-of-range value.
 
 ## Project layout and conventions
 - `project.godot`: renderer Forward+ (Compatibility on the web), viewport 1920x1080 with stretch mode `viewport`
